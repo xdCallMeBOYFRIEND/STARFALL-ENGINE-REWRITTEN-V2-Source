@@ -24,6 +24,7 @@ typedef NoteSplashData = {
 	texture:String,
 	useGlobalShader:Bool, //breaks r/g/b but makes it copy default colors for your custom note
 	useRGBShader:Bool,
+	useNoteRGB:Bool,
 	antialiasing:Bool,
 	r:FlxColor,
 	g:FlxColor,
@@ -46,8 +47,11 @@ class Note extends FlxSprite
 		'Hey!',
 		'Hurt Note',
 		'GF Sing',
-		'No Animation'
+		'No Animation',
+		"Ghost Note"
 	];
+
+	public var row:Int = 0;
 
 	public var extraData:Map<String, Dynamic> = new Map<String, Dynamic>();
 
@@ -105,6 +109,7 @@ class Note extends FlxSprite
 		antialiasing: !PlayState.isPixelStage,
 		useGlobalShader: false,
 		useRGBShader: (PlayState.SONG != null) ? !(PlayState.SONG.disableNoteRGB == true) : true,
+		useNoteRGB: true,
 		r: -1,
 		g: -1,
 		b: -1,
@@ -191,6 +196,12 @@ class Note extends FlxSprite
 		}
 	}
 
+	public function updateRgb(palette:Array<FlxColor>) {
+		rgbShader.r = palette[0];
+		rgbShader.g = palette[1];
+		rgbShader.b = palette[2];
+	}
+
 	private function set_noteType(value:String):String {
 		noteSplashData.texture = PlayState.SONG != null ? PlayState.SONG.splashSkin : 'noteSplashes/noteSplashes';
 		defaultRGB();
@@ -224,6 +235,9 @@ class Note extends FlxSprite
 				case 'No Animation':
 					noAnimation = true;
 					noMissAnimation = true;
+				case 'Ghost Note':
+					noAnimation = true;
+					multAlpha = 0.35;
 				case 'GF Sing':
 					gfNote = true;
 			}
@@ -369,7 +383,7 @@ class Note extends FlxSprite
 			if(skin == null || skin.length < 1)
 				skin = defaultNoteSkin + postfix;
 		}
-		else rgbShader.enabled = false;
+		//else rgbShader.enabled = false;
 
 		var animName:String = null;
 		if(animation.curAnim != null) {

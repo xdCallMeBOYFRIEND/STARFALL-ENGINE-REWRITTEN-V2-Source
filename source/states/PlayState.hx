@@ -73,8 +73,11 @@ import crowplexus.hscript.Printer;
 **/
 class PlayState extends MusicBeatState
 {
+	public var ghostsAllowed:Bool = ClientPrefs.data.ghostsAllowed;
 	public static var STRUM_X = 42;
 	public static var STRUM_X_MIDDLESCROLL = -278;
+
+	var noteRows:Array<Array<Array<Note>>> = [[],[]];
 
 	public static var ratingStuff:Array<Dynamic> = [
 		['You Suck!', 0.2], //From 0% to 19%
@@ -581,7 +584,13 @@ class PlayState extends MusicBeatState
 
 		uiGroup.cameras = [camHUD];
 		noteGroup.cameras = [camHUD];
-		comboGroup.cameras = [camHUD];
+		if (ClientPrefs.data.ratingCamType == 'camGame') {
+			comboGroup.cameras = [camGame];
+		} else if (ClientPrefs.data.ratingCamType == 'camHUD') {
+			comboGroup.cameras = [camHUD];
+		} else {
+			comboGroup.cameras = [camOther];
+		}
 
 		startingSong = true;
 
@@ -1176,10 +1185,11 @@ class PlayState extends MusicBeatState
 
 	public dynamic function fullComboFunction()
 	{
-		var sicks:Int = ratingsData[0].hits;
-		var goods:Int = ratingsData[1].hits;
-		var bads:Int = ratingsData[2].hits;
-		var shits:Int = ratingsData[3].hits;
+		var epics:Int = ratingsData[0].hits;
+		var sicks:Int = ratingsData[1].hits;
+		var goods:Int = ratingsData[2].hits;
+		var bads:Int = ratingsData[3].hits;
+		var shits:Int = ratingsData[4].hits;
 
 		ratingFC = "";
 		if(songMisses == 0)
@@ -1187,6 +1197,7 @@ class PlayState extends MusicBeatState
 			if (bads > 0 || shits > 0) ratingFC = 'FC';
 			else if (goods > 0) ratingFC = 'GFC';
 			else if (sicks > 0) ratingFC = 'SFC';
+			else if (epics > 0) ratingFC = 'EFC';
 		}
 		else {
 			if (songMisses < 10) ratingFC = 'SDCB';
@@ -1390,6 +1401,11 @@ class PlayState extends MusicBeatState
 				}
 
 				var swagNote:Note = new Note(spawnTime, noteColumn, oldNote);
+				swagNote.row = Conductor.secsToRow(spawnTime);
+				var rowArray = noteRows[gottaHitNote?0:1];
+				if(rowArray[swagNote.row]==null)
+					rowArray[swagNote.row]=[];
+				rowArray[swagNote.row].push(swagNote);
 				var isAlt: Bool = section.altAnim && !gottaHitNote;
 				swagNote.gfNote = (section.gfSection && gottaHitNote == section.mustHitSection);
 				swagNote.animSuffix = isAlt ? "-alt" : "";
@@ -3063,6 +3079,34 @@ class PlayState extends MusicBeatState
 
 				if(canPlay) char.playAnim(animToPlay, true);
 				char.holdTimer = 0;
+
+					// TODO: maybe move this all away into a seperate function
+					if (noteRows[note.mustPress ? 0 : 1][note.row] != null && noteRows[note.mustPress ? 0 : 1][note.row].length > 1 && note.noteType != "Ghost Note" && ghostsAllowed)
+					{
+						// potentially have jump anims?
+						var chord = noteRows[note.mustPress ? 0 : 1][note.row];
+						var animNote = chord[0];
+						var realAnim = singAnimations[Std.int(Math.abs(animNote.noteData))];
+						if (char.mostRecentRow != note.row)
+							char.playAnim(realAnim, true);
+
+						if(note.nextNote != null && note.prevNote != null){
+							if (note != animNote && callOnScripts('onGhostAnim', [animToPlay, note]) != LuaUtils.Function_Stop) {
+								char.playGhostAnim(chord.indexOf(note), animToPlay, true);
+							}else if(note.nextNote.isSustainNote){
+								char.playAnim(realAnim, true);
+								char.playGhostAnim(chord.indexOf(note), animToPlay, true);
+
+							}
+						}
+						char.mostRecentRow = note.row;
+					}
+					else{
+						if(note.noteType != "Ghost Note")
+							char.playAnim(animToPlay, true);
+						else
+							char.playGhostAnim(note.noteData, animToPlay, true);
+					}
 			}
 		}
 
@@ -3131,6 +3175,33 @@ class PlayState extends MusicBeatState
 							char.specialAnim = true;
 							char.heyTimer = 0.6;
 						}
+					}
+					// TODO: maybe move this all away into a seperate function
+					if (noteRows[note.mustPress ? 0 : 1][note.row] != null && noteRows[note.mustPress ? 0 : 1][note.row].length > 1 && note.noteType != "Ghost Note" && ghostsAllowed)
+					{
+						// potentially have jump anims?
+						var chord = noteRows[note.mustPress ? 0 : 1][note.row];
+						var animNote = chord[0];
+						var realAnim = singAnimations[Std.int(Math.abs(animNote.noteData))];
+						if (char.mostRecentRow != note.row)
+							char.playAnim(realAnim, true);
+
+						if(note.nextNote != null && note.prevNote != null){
+							if (note != animNote && callOnScripts('onGhostAnim', [animToPlay, note]) != LuaUtils.Function_Stop) {
+								char.playGhostAnim(chord.indexOf(note), animToPlay, true);
+							}else if(note.nextNote.isSustainNote){
+								char.playAnim(realAnim, true);
+								char.playGhostAnim(chord.indexOf(note), animToPlay, true);
+
+							}
+						}
+						char.mostRecentRow = note.row;
+					}
+					else{
+						if(note.noteType != "Ghost Note")
+							char.playAnim(animToPlay, true);
+						else
+							char.playGhostAnim(note.noteData, animToPlay, true);
 					}
 				}
 			}

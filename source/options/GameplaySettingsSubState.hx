@@ -31,6 +31,12 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 			'ghostTapping',
 			BOOL);
 		addOption(option);
+
+		var option:Option = new Option('Epic Rating',
+			"If checked, adds an additional fifth rating that gives more score when hit.",
+			'useEpicRating',
+			BOOL);
+		addOption(option);
 		
 		var option:Option = new Option('Auto Pause',
 			"If checked, the game automatically pauses if the screen isn't on focus.",
@@ -65,6 +71,16 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 		option.scrollSpeed = 20;
 		option.minValue = -30;
 		option.maxValue = 30;
+		addOption(option);
+
+		var option:Option = new Option('Epic!! Hit Window',
+			'Changes the amount of time you have\nfor hitting a "Epic!!" in milliseconds.',
+			'epicWindow',
+			INT);
+		option.displayFormat = '%vms';
+		option.scrollSpeed = 15;
+		option.minValue = 15;
+		option.maxValue = 45;
 		addOption(option);
 
 		var option:Option = new Option('Sick! Hit Window',

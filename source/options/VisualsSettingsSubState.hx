@@ -116,6 +116,19 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			BOOL);
 		addOption(option);
 
+		var option:Option = new Option('Rating Camera Type:',
+			"Which camera should the ratings be parented to?",
+			'ratingCamType',
+			STRING,
+			['camGame', 'camHUD', 'camOther']);
+		addOption(option);
+
+		var option:Option = new Option('Impostor Note Ghosts',
+			"If checked, adds Impostor-styled ghost trails when multiple notes are hit at once.",
+			'ghostsAllowed',
+			BOOL);
+		addOption(option);
+
 		var option:Option = new Option('Score Text Grow on Hit',
 			"If unchecked, disables the Score text growing\neverytime you hit a note.",
 			'scoreZoom',
