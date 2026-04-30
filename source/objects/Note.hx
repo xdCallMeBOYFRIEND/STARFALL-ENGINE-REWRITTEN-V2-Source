@@ -237,7 +237,7 @@ class Note extends FlxSprite
 					noMissAnimation = true;
 				case 'Ghost Note':
 					noAnimation = true;
-					multAlpha = 0.35;
+					multAlpha = 0.8;
 				case 'GF Sing':
 					gfNote = true;
 			}

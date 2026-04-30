@@ -110,10 +110,11 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			BOOL);
 		addOption(option);
 
-		var option:Option = new Option('Player Healthbar-Colored Score',
-			"If unchecked, the score and botplay texts will go back to being their default white.",
+		var option:Option = new Option('Score Coloring:',
+			"How do you want the score and botplay texts to be colored?\n(Opponent Healthbar, Player Healthbar, or neither)",
 			'playerBarColor',
-			BOOL);
+			STRING,
+			['Opponent', 'Player', 'Disabled']);
 		addOption(option);
 
 		var option:Option = new Option('Rating Camera Type:',
