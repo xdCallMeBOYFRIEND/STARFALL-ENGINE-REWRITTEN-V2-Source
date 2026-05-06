@@ -94,7 +94,7 @@ class PlayState extends MusicBeatState
 
 	//event variables
 	public var ratingEffects:Bool = true; //Compatibility with Stardust stuff
-	public var ratingBop:Bool = false; //This too
+	public var ratingBop:Bool = true; //This too
 	public var ratingTilt:Bool = false; //This three
 	private var isCameraOnForcedPos:Bool = false;
 
@@ -128,6 +128,17 @@ class PlayState extends MusicBeatState
 	public static var uiPrefix:String = "";
 	public static var uiPostfix:String = "";
 	public static var isPixelStage(get, never):Bool;
+
+	public var markupEnabled:Bool = true;
+	public var colorRatings:Bool = false; //Inspired by the "Enabled DX" settings for the V4 UI in Impostor Legacy
+	public var rankColors:Map<String, FlxColor> = [
+		"EFC" => 0xFFBB79FF,
+		"SFC" => 0xff2DE356,
+		"GFC" => 0xff25B5EB,
+		"FC" => 0xffE6B72B,
+		"SDCB" => 0xffDC3834,
+		"Clear" => 0xFFA244D5,
+	];
 
 	@:noCompletion
 	static function set_stageUI(value:String):String
@@ -1168,6 +1179,7 @@ class PlayState extends MusicBeatState
 			doScoreBop();
 
 		callOnScripts('onUpdateScore', [miss]);
+		if (markupEnabled) applyScoreMarkup();
 	}
 
 	public dynamic function updateScoreText()
@@ -1183,6 +1195,28 @@ class PlayState extends MusicBeatState
 		if(!instakillOnMiss) tempScore = Language.getPhrase('score_text', 'Score: {1} | Misses: {2} | Accuracy: {3}', [songScore, songMisses, str]);
 		else tempScore = Language.getPhrase('score_text_instakill', 'Score: {1} | Accuracy: {2}', [songScore, str]);
 		scoreTxt.text = tempScore;
+	}
+
+	var scoreTxtFormat:Null<FlxTextFormat> = null;
+	
+	inline function applyScoreMarkup()
+	{
+		@:privateAccess
+		{
+			if (scoreTxt._formatRanges[0] == null)
+			{
+				scoreTxtFormat ??= new FlxTextFormat();
+				
+				scoreTxt.addFormat(scoreTxtFormat);
+			}
+			
+			scoreTxtFormat.format.color = rankColors.get(ratingFC) ?? scoreTxt.color;
+			
+			final text = scoreTxt.text;
+			
+			scoreTxt._formatRanges[0].range.start = text.indexOf(ratingFC);
+			scoreTxt._formatRanges[0].range.end = text.length;
+		}
 	}
 
 	public dynamic function fullComboFunction()
@@ -2662,6 +2696,7 @@ class PlayState extends MusicBeatState
 		rating.x += ClientPrefs.data.comboOffset[0];
 		rating.y -= ClientPrefs.data.comboOffset[1];
 		rating.antialiasing = antialias;
+		if (colorRatings) rating.color = scoreTxt.color ?? FlxColor.WHITE;
 
 		var comboSpr:FlxSprite = new FlxSprite().loadGraphic(Paths.image(uiFolder + 'combo' + uiPostfix));
 		comboSpr.screenCenter();
@@ -2674,6 +2709,7 @@ class PlayState extends MusicBeatState
 		comboSpr.antialiasing = antialias;
 		comboSpr.y += 60;
 		comboSpr.velocity.x += FlxG.random.int(1, 10) * playbackRate;
+		if (colorRatings) comboSpr.color = scoreTxt.color ?? FlxColor.WHITE;
 		comboGroup.add(rating);
 
 		if (!PlayState.isPixelStage)
@@ -2734,6 +2770,7 @@ class PlayState extends MusicBeatState
 			numScore.velocity.x = FlxG.random.float(-5, 5) * playbackRate;
 			numScore.visible = !ClientPrefs.data.hideHud;
 			numScore.antialiasing = antialias;
+			if (colorRatings) numScore.color = scoreTxt.color ?? FlxColor.WHITE;
 
 			//if (combo >= 10 || combo == 0)
 			if(showComboNum)

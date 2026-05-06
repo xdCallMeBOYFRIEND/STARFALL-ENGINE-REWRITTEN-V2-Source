@@ -270,6 +270,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		lilStage = new FlxSprite(100, 432).loadGraphic(Paths.image("chartEditor/lilStage"));
 		lilStage.scrollFactor.set();
+		lilStage.antialiasing = false;
 
 		lilBf = new FlxSprite(100, 432).loadGraphic(Paths.image("chartEditor/lilBf"), true, 300, 256);
 		lilBf.animation.add("idle", [0, 1], 12, true);
@@ -279,6 +280,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		lilBf.animation.add("3", [12, 13, 14], 12, false);
 		lilBf.animation.add("yeah", [17, 20, 23], 12, false);
 		lilBf.animation.play("idle");
+		lilBf.antialiasing = false;
 		lilBf.animation.finishCallback = function(name:String){
 			lilBf.animation.play(name, true, false, lilBf.animation.getByName(name).numFrames - 2);
 		}
@@ -291,6 +293,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		lilOpp.animation.add("2", [9, 10, 11], 12, false);
 		lilOpp.animation.add("3", [12, 13, 14], 12, false);
 		lilOpp.animation.play("idle");
+		lilOpp.antialiasing = false;
 		lilOpp.animation.finishCallback = function(name:String){
 			lilOpp.animation.play(name, true, false, lilOpp.animation.getByName(name).numFrames - 2);
 		}
@@ -705,6 +708,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	var autoSaveTime:Float = 0;
 	var autoSaveCap:Int = 2; //in minutes
 	var backupLimit:Int = 10;
+	var lilBfResetAnim:Float = 0;
+    var lilOppResetAnim:Float = 0;
 
 	var lastBeatHit:Int = 0;
 	override function update(elapsed:Float)
@@ -993,6 +998,18 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			if(!songFinished) Conductor.songPosition = FlxMath.bound(FlxG.sound.music.time + Conductor.offset, 0, FlxG.sound.music.length - 1);
 			updateScrollY();
+
+			lilBfResetAnim -= elapsed;
+			if (lilBfResetAnim <= 0){
+				lilBf.animation.play("idle");
+				lilBfResetAnim = 0;
+			}
+
+			lilOppResetAnim -= elapsed;
+			if (lilOppResetAnim <= 0){
+				lilOpp.animation.play("idle");
+				lilOppResetAnim = 0;
+			}
 		}
 
 		super.update(elapsed);
@@ -1530,10 +1547,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						if(note.mustPress){
 							lilBf.animation.play("" + Std.string(data), false);
 							lilBf.color = 0xffffffff;
+							lilBfResetAnim = ((Conductor.stepCrochet * 1.25) + note.sustainLength) / 1000 / playbackRate;
 						}
 						else if(!note.mustPress){
 							lilOpp.animation.play("" + Std.string(data), false);
 							lilOpp.color = 0xffffffff;
+							lilOppResetAnim = ((Conductor.stepCrochet * 1.25) + note.sustainLength) / 1000 / playbackRate;
 						}
 					}
 				}
