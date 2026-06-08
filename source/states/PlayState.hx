@@ -186,6 +186,7 @@ class PlayState extends MusicBeatState
 
 	public var camZooming:Bool = false;
 	public var camZoomingMult:Float = 1;
+	public var camZoomingFrequency:Float = 4;
 	public var camZoomingDecay:Float = 1;
 	private var curSong:String = "";
 
@@ -3446,7 +3447,7 @@ class PlayState extends MusicBeatState
 			if (generatedMusic && !endingSong && !isCameraOnForcedPos)
 				moveCameraSection();
 
-			if (camZooming && FlxG.camera.zoom < 1.35 && ClientPrefs.data.camZooms)
+			if (camZooming && FlxG.camera.zoom < 1.35 && ClientPrefs.data.camZooms && (curBeat % camZoomingFrequency) == 0)
 			{
 				FlxG.camera.zoom += 0.015 * camZoomingMult;
 				camHUD.zoom += 0.03 * camZoomingMult;
