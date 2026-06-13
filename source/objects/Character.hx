@@ -56,6 +56,7 @@ class Character extends FlxSprite
 	public var holdTimer:Float = 0;
 	public var heyTimer:Float = 0;
 	public var specialAnim:Bool = false;
+	public var isCustom:Bool = false;
 	public var animationNotes:Array<Dynamic> = [];
 	public var stunned:Bool = false;
 	public var singDuration:Float = 4; //Multiplier of how long a character holds the sing pose
@@ -70,10 +71,13 @@ class Character extends FlxSprite
 	public var cameraPosition:Array<Float> = [0, 0];
 	public var healthColorArray:Array<Int> = [255, 0, 0];
 
+	public var ghostDisplacement:Float = 40;
+	public var ghostsEnabled:Bool = true;
 	public var doubleGhosts:Array<FlxSprite> = [];
-	public var ghostID:Int = 0;
-	public var ghostAnim:String = '';
-	public var ghostTweenGRP:Array<FlxTween> = [];
+	public var ghostAlpha = 0.6;
+	public var ghostTweenGrp:Array<FlxTween> = [];
+
+	public var lastHitTime:Float = -1000;
 
 	public var missingCharacter:Bool = false;
 	public var missingText:FlxText;
@@ -97,12 +101,7 @@ class Character extends FlxSprite
 		this.isPlayer = isPlayer;
 		changeCharacter(character);
 
-		for(i in 0...4){
-			var ghost = new FlxSprite();
-			ghost.visible = false;
-			ghost.alpha = 0.6;
-			doubleGhosts.push(ghost);
-		}
+		genGhosts();
 		
 		switch(curCharacter)
 		{
@@ -112,6 +111,18 @@ class Character extends FlxSprite
 				playAnim("shoot1");
 			case 'pico-blazin', 'darnell-blazin':
 				skipDance = true;
+		}
+	}
+
+	function genGhosts()
+	{
+		for (i in 0...4)
+		{
+			final ghost = new FlxSprite();
+			ghost.visible = false;
+			ghost.antialiasing = antialiasing;
+			ghost.alpha = ghostAlpha;
+			doubleGhosts.push(ghost);
 		}
 	}
 
@@ -152,6 +163,7 @@ class Character extends FlxSprite
 		hasMissAnimations = hasAnimation('singLEFTmiss') || hasAnimation('singDOWNmiss') || hasAnimation('singUPmiss') || hasAnimation('singRIGHTmiss');
 		recalculateDanceIdle();
 		dance();
+		
 	}
 
 	public function loadCharacterFile(json:Dynamic)
@@ -167,12 +179,13 @@ class Character extends FlxSprite
 
 		scale.set(1, 1);
 		updateHitbox();
+		isCustom = true;
 
 		if(!isAnimateAtlas)
 		{
 			if(json.assetPath != null)
-				path = convertMultiSparrow(json.animations, path);
-				frames = Paths.getMultiAtlas(path.split(','));
+			path = convertMultiSparrow(json.animations, path);
+			frames = Paths.getMultiAtlas(path.split(','));
 		}
 		#if flxanimate
 		else
@@ -207,6 +220,7 @@ class Character extends FlxSprite
 			healthIcon = json.healthicon;
 			singDuration = json.sing_duration;
 			flipX = (json.flip_x != isPlayer);
+			
 			healthColorArray = (json.healthbar_colors != null && json.healthbar_colors.length > 2) ? json.healthbar_colors : [161, 161, 161];
 			vocalsFile = json.vocals_file != null ? json.vocals_file : '';
 			originalFlipX = (json.flip_x == true);
@@ -230,19 +244,7 @@ class Character extends FlxSprite
 				}
 			}
 
-			// positioning
-			if(json.offsets != null)
-				positionArray = json.offsets;
-			if(json.cameraOffsets != null)
-				cameraPosition = json.cameraOffsets;
-
-			// data
-			if(json.healthIcon != null)
-				healthIcon = json.healthIcon.id != null ? json.healthIcon.id : curCharacter;
-			else
-				healthIcon = curCharacter;
-			
-			if(json.singTime != null)
+		if(json.singTime != null)
 				singDuration = json.singTime;
 			else
 				singDuration = 8.0;
@@ -267,6 +269,7 @@ class Character extends FlxSprite
 			antialiasing = ClientPrefs.data.antialiasing ? !noAntialiasing : false;
 
 			// animations
+			// animations
 			var base_animationsArray:Array<Dynamic> = []; 
 			base_animationsArray = json.animations;
 			if(base_animationsArray != null && base_animationsArray.length > 0) {
@@ -283,7 +286,7 @@ class Character extends FlxSprite
 				}
 			}
 		}
-		
+
 		if(animationsArray != null && animationsArray.length > 0) {
 			for (anim in animationsArray) {
 				var animAnim:String = '' + anim.anim;
@@ -318,6 +321,7 @@ class Character extends FlxSprite
 		#end
 		//trace('Loaded file to character ' + curCharacter);
 	}
+	
 
 	function convertMultiSparrow(animations:Null<Array<Dynamic>>, str:String):String {
 		if(animations != null && animations.length > 0) {
@@ -393,9 +397,11 @@ class Character extends FlxSprite
 		if(isAnimationFinished() && hasAnimation('$name-loop'))
 			playAnim('$name-loop');
 
-		for (ghost in doubleGhosts)
-			ghost.update(elapsed);
-
+		if (ghostsEnabled)
+		{
+			for (ghost in doubleGhosts)
+				ghost.update(elapsed);
+		}
 		super.update(elapsed);
 	}
 
@@ -505,6 +511,23 @@ class Character extends FlxSprite
 		}
 	}
 
+	public function flipAnims()
+	{
+		//rewrote it
+		for (anim in animationsArray){
+			if (anim.anim.contains("singRIGHT")){
+				var animSplit:Array<String> = anim.anim.split('singRIGHT');
+
+				if (animation.getByName('singRIGHT' + animSplit[1]) != null && animation.getByName('singLEFT' + animSplit[1]) != null)
+				{
+					var oldRight = animation.getByName('singRIGHT' + animSplit[1]).frames;
+					animation.getByName('singRIGHT' + animSplit[1]).frames = animation.getByName('singLEFT' + animSplit[1]).frames;
+					animation.getByName('singLEFT' + animSplit[1]).frames = oldRight;
+				}
+			}
+		}
+	}
+
 	function loadMappedAnims():Void
 	{
 		try
@@ -525,62 +548,6 @@ class Character extends FlxSprite
 	{
 		return FlxSort.byValues(FlxSort.ASCENDING, Obj1[0], Obj2[0]);
 	}
-
-	public function playGhostAnim(ghostID = 0, AnimName:String, Force:Bool = false, Reversed:Bool = false, Frame:Int = 0){
-
-		var ghost:FlxSprite = doubleGhosts[ghostID];
-		ghost.scale.copyFrom(scale);
-		ghost.frames = frames;
-		ghost.animation.copyFrom(animation);
-		ghost.shader = shader;
-		ghost.x = x;
-		ghost.y = y;
-		ghost.flipX = flipX;
-		ghost.flipY = flipY;
-		ghost.alpha = alpha * 0.6;
-		ghost.antialiasing = antialiasing;
-		ghost.visible = true;
-		ghost.color = FlxColor.fromRGB(healthColorArray[0], healthColorArray[1], healthColorArray[2]);
-		ghost.animation.play(AnimName, Force, Reversed, Frame);
-		if (ghostTweenGRP[ghostID] != null)
-			ghostTweenGRP[ghostID].cancel();
-
-		var direction:String = AnimName.substring(4);
-
-		var directionMap:Map<String, Array<Float>> = [
-			'UP' => [0, -45],
-			'DOWN' => [0, 45],
-			'RIGHT' => [45, 0],
-			'LEFT' => [-45, 0],
-			'UP-alt' => [0, -45],
-			'DOWN-alt' => [0, 45],
-			'RIGHT-alt' => [45, 0],
-			'LEFT-alt' => [-45, 0],
-		];
-		//had to add alt cuz it kept crashing on room code LOL
-
-		var moveDirections:Array<Float> = [
-			x + (directionMap.get(direction)[0]),
-			y + (directionMap.get(direction)[1])
-		];
-
-		ghostTweenGRP[ghostID] = FlxTween.tween(ghost, {alpha: 0, x: moveDirections[0], y: moveDirections[1]}, 0.75, {
-			ease: FlxEase.linear,
-			onComplete: function(twn:FlxTween)
-			{
-				ghost.visible = false;
-				ghostTweenGRP[ghostID].destroy(); // maybe?
-				ghostTweenGRP[ghostID] = null;
-			}
-		});
-
-		var daOffset = animOffsets.get(AnimName);
-		if (animOffsets.exists(AnimName))
-			ghost.offset.set(daOffset[0], daOffset[1]);
-		else
-			ghost.offset.set(0, 0);
-	}
-
 
 	public var danceEveryNumBeats:Int = 2;
 	private var settingCharacterUp:Bool = true;
@@ -613,6 +580,65 @@ class Character extends FlxSprite
 	public function quickAnimAdd(name:String, anim:String)
 	{
 		animation.addByPrefix(name, anim, 24, false);
+	}
+
+	public function playGhostAnim(ghostID = 0, animName:String, force:Bool = false, reversed:Bool = false, frame:Int = 0)
+	{
+		var ghost:FlxSprite = doubleGhosts[ghostID];
+		ghost.scale.copyFrom(scale);
+		ghost.frames = frames;
+		ghost.animation.copyFrom(animation);
+		ghost.antialiasing = antialiasing;
+		ghost.shader = shader;
+		ghost.x = x;
+		ghost.y = y;
+		ghost.flipX = flipX;
+		ghost.flipY = flipY;
+		ghost.blend = HARDLIGHT; //Impostor moment lol
+		ghost.alpha = alpha * ghostAlpha;
+		ghost.visible = visible;
+		ghost.color = FlxColor.fromRGB(healthColorArray[0], healthColorArray[1], healthColorArray[2]);
+		ghost.animation.play(animName, force, reversed, frame);
+		
+		if (ghostTweenGrp[ghostID] != null)
+			ghostTweenGrp[ghostID].cancel();
+		
+		final direction:String = animName.substring(4).split('-')[0];
+		
+		inline function resolveDir(xDir:Bool = false):Float
+		{
+			var output:Float = 0;
+			switch (direction)
+			{
+				case 'UP':
+					if (!xDir) output = -ghostDisplacement;
+				case 'DOWN':
+					if (!xDir) output = ghostDisplacement;
+				case 'RIGHT':
+					if (xDir) output = ghostDisplacement;
+				case 'LEFT':
+					if (xDir) output = -ghostDisplacement;
+			}
+			
+			return output;
+		}
+		
+		final moveX = x + resolveDir(true);
+		final moveY = y + resolveDir(false);
+		
+		ghostTweenGrp[ghostID] = FlxTween.tween(ghost, {alpha: 0, x: moveX, y: moveY}, 0.75,
+			{
+				onComplete: (twn) -> {
+					ghost.visible = false;
+					ghostTweenGrp[ghostID] = null;
+				}
+			});
+			
+		if (animOffsets.exists(animName))
+		{
+			final daOffset = animOffsets.get(animName);
+			ghost.offset.set(daOffset[0] * scale.x, daOffset[1] * scale.y);
+		}
 	}
 
 	// Atlas support
@@ -648,9 +674,12 @@ class Character extends FlxSprite
 			}
 			return;
 		}
-		for(ghost in doubleGhosts){
-			if(ghost.visible)
-				ghost.draw();
+		if (ghostsEnabled)
+		{
+			for (ghost in doubleGhosts)
+			{
+				if (ghost.visible) ghost.draw();
+			}
 		}
 		super.draw();
 		if(missingCharacter && visible)
@@ -689,6 +718,17 @@ class Character extends FlxSprite
 	public override function destroy()
 	{
 		atlas = FlxDestroyUtil.destroy(atlas);
+
+		if (ghostTweenGrp != null && ghostTweenGrp.length > 0)
+		{
+			for (i in ghostTweenGrp)
+				i?.cancel();
+		}
+		
+		ghostTweenGrp = FlxDestroyUtil.destroyArray(ghostTweenGrp);
+		
+		doubleGhosts = FlxDestroyUtil.destroyArray(doubleGhosts);
+
 		super.destroy();
 	}
 	#end

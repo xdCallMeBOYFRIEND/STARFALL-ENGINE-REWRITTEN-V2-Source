@@ -7,8 +7,8 @@ class CoolUtil
 {
 	public static function checkForUpdates(url:String = null):String {
 		if (url == null || url.length == 0)
-			url = "https://raw.githubusercontent.com/ShadowMario/FNF-PsychEngine/main/gitVersion.txt";
-		var version:String = states.MainMenuState.psychEngineVersion.trim();
+			url = "https://raw.githubusercontent.com/xdCallMeBOYFRIEND/STARFALL-ENGINE-REWRITTEN-V2-Source/refs/heads/main/gitVersion.txt";
+		var version:String = states.MainMenuState.starfallEngineVersion.trim();
 		if(ClientPrefs.data.checkForUpdates) {
 			trace('checking for updates...');
 			var http = new haxe.Http(url);
@@ -153,6 +153,15 @@ class CoolUtil
 			FlxG.error("Platform is not supported for CoolUtil.openFolder");
 		#end
 	}
+
+	/**
+	 * referenced via https://youtu.be/LSNQuFEDOyQ
+	 * 
+	 * A frame independent lerp. Primary purpose is for the camera
+	 * 
+	 * your decay should be around 1 - 25
+	 */
+	public static function decayLerp(a:Float, b:Float, decay:Float, elapsed:Float) return b + (a - b) * Math.exp(-decay * elapsed);
 
 	/**
 		Helper Function to Fix Save Files for Flixel 5

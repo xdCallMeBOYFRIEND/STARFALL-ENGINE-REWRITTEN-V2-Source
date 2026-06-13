@@ -2,6 +2,10 @@ package objects;
 
 class HealthIcon extends FlxSprite
 {
+	public static final DEFAULT_LERP_RATE:Float = 9;
+	public var WINNING_RANGE:Float = 0.8;
+	public var LOSING_RANGE:Float = 0.2;
+	
 	public var sprTracker:FlxSprite;
 	public var isPlayer:Bool = false;
 	public var hasWinning:Bool = true;
@@ -22,6 +26,8 @@ class HealthIcon extends FlxSprite
 		if (sprTracker != null)
 			setPosition(sprTracker.x + sprTracker.width + 10, sprTracker.y - 30);
 	}
+
+	public var updateFrames:Bool = true;
 
 	private var iconOffsets:Array<Float> = [0, 0];
 	public function changeIcon(char:String, ?allowGPU:Bool = true) {
@@ -48,7 +54,7 @@ class HealthIcon extends FlxSprite
 			this.char = char;
 			this.hasWinning = hasWin;
 
-			if(char.endsWith('-pixel'))
+			if(char.endsWith('-pixel')) //To-Do Note: Figure out how to rescale the pixel icons at their base resolution while accounting for singular/winning icons without potentially breaking the system for it
 				antialiasing = false;
 			else
 				antialiasing = ClientPrefs.data.antialiasing;
@@ -68,5 +74,12 @@ class HealthIcon extends FlxSprite
 
 	public function getCharacter():String {
 		return char;
+	}
+
+	public inline function updateIconAnim(health:Float):Void
+	{
+		if (!updateFrames) return;
+		
+		animation.frameIndex = health < LOSING_RANGE ? 1 : health > WINNING_RANGE && (hasWinning) ? 2 : 0;
 	}
 }

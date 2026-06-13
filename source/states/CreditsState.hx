@@ -40,7 +40,7 @@ class CreditsState extends MusicBeatState
 		var defaultList:Array<Array<String>> = [ //Name - Icon name - Description - Link - BG Color
 			["Starfall Engine Team"],
 			["Henry.XML",		"henry",		"Uhhhhhhhh fuck, I don't know.",					"https://www.youtube.com/@SomeGuyWhoLikesFNFLmao",	"284289"],
-			["SheilaYT",		"sheila",		"Gave the idea for this one.",					"https://www.youtube.com/@SheilaYT42",	"E70F70"],
+			["Charlotte",		"sheila",		"Gave the idea for this one, helped with the pixel icon scaling.",					"https://www.youtube.com/@CharlotteYT36",	"E70F70"],
 			["Mijo.XML",		"mijo",		"His name is Mijo, and he likes to rap. (BF FNF Real)",					"https://www.youtube.com/@mijomixmusic",	"9393C5"],
 			["RileyStarfall",		"rileystarfall",		"Made the icon and logo assets, also good friend.",					"https://www.youtube.com/@RileyStarfall",	"1C197F"],
 			["Rab.XML",		"rab",		"Bestie",					"https://www.youtube.com/@RabXML",	"FF0000"],

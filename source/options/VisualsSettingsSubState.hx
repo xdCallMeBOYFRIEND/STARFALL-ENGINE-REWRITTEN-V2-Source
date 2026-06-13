@@ -67,8 +67,24 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			option.onChange = onChangeSplashSkin;
 		}
 
+		var sustainSplashes:Array<String> = Mods.mergeAllTextsNamed('images/holdSplashes/list.txt');
+		if(sustainSplashes.length > 0)
+		{
+			if(!sustainSplashes.contains(ClientPrefs.data.holdSplashSkin))
+				ClientPrefs.data.holdSplashSkin = ClientPrefs.defaultData.holdSplashSkin; //Reset to default if saved splashskin couldnt be found
+
+			sustainSplashes.insert(0, ClientPrefs.defaultData.holdSplashSkin); //Default skin always comes first
+			var option:Option = new Option('Sustain Splashes:',
+				"Select your prefered Sustain Splash variation.",
+				'holdSplashSkin',
+				STRING,
+				sustainSplashes);
+			addOption(option);
+			option.onChange = onChangeSplashSkin;
+		}
+
 		var option:Option = new Option('Note Splash Opacity',
-			'How much transparent should the Note Splashes be.',
+			'How transparent should the Note Splashes be.',
 			'splashAlpha',
 			PERCENT);
 		option.scrollSpeed = 1.6;
@@ -78,6 +94,17 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		option.decimals = 1;
 		addOption(option);
 		option.onChange = playNoteSplashes;
+
+		var option:Option = new Option('Sustain Splash Opacity',
+			'How transparent should the Sustain Splashes be.',
+			'holdSplashAlpha',
+			PERCENT);
+		option.scrollSpeed = 1.6;
+		option.minValue = 0.0;
+		option.maxValue = 1;
+		option.changeValue = 0.1;
+		option.decimals = 1;
+		addOption(option);
 
 		var option:Option = new Option('Hide HUD',
 			'If checked, hides most HUD elements.',
@@ -89,7 +116,7 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			"What should the Time Bar display?",
 			'timeBarType',
 			STRING,
-			['Time Left', 'Time Elapsed', 'Song Name', 'Song Name + Time', 'Disabled']);
+			['Time Left', 'Time Elapsed', 'Song Name', 'Song Name + Time', 'Forever Mark', 'Disabled']);
 		addOption(option);
 
 		var option:Option = new Option('Flashing Lights',
@@ -107,6 +134,12 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		var option:Option = new Option('Forever Combo',
 			"If unchecked, combos will displayed with all three digits at the start of a combo, rather than having digits equal to the combo number\n(1 - 9 being one, 10 - 99 being two).",
 			'foreverCombo',
+			BOOL);
+		addOption(option);
+
+		var option:Option = new Option('Smooth Healthbar',
+			"If checked, the healthbar and icons will smoothly tween to their next value rather than instantly snapping.",
+			'smoothHealthbar',
 			BOOL);
 		addOption(option);
 

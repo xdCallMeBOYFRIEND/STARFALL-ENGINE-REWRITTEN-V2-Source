@@ -1137,6 +1137,13 @@ class FunkinLua {
 			if (right != null && right != '')
 				right_color = CoolUtil.colorFromString(right);
 			game.healthBar.setColors(left_color, right_color);
+			if (ClientPrefs.data.playerBarColor == 'Player') {
+				game.scoreTxt.color = right_color;
+				game.botplayTxt.color = right_color;
+			} else if (ClientPrefs.data.playerBarColor == 'Opponent') {
+				game.scoreTxt.color = left_color;
+				game.botplayTxt.color = left_color;
+			}
 		});
 		Lua_helper.add_callback(lua, "setTimeBarColors", function(left:String, right:String) {
 			var left_color:Null<FlxColor> = null;

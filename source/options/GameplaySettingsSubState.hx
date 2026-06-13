@@ -31,12 +31,6 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 			'ghostTapping',
 			BOOL);
 		addOption(option);
-
-		var option:Option = new Option('Epic Rating',
-			"If checked, adds an additional fifth rating that gives more score when hit.",
-			'useEpicRating',
-			BOOL);
-		addOption(option);
 		
 		var option:Option = new Option('Auto Pause',
 			"If checked, the game automatically pauses if the screen isn't on focus.",
