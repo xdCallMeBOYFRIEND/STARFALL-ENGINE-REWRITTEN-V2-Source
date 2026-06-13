@@ -1,5 +1,6 @@
 # Friday Night Funkin' - STARFALL Engine Rewritten
 Originally made as a personal-use engine on an older version of Psych, has now been updated to be able to support more recent mods.
+The main goal of Starfall is to hopefully improve in the areas where base Psych needed some changes, while adding new and unique features ontop of it that modders could utilize for their mods.
 
 ## Installation:
 
