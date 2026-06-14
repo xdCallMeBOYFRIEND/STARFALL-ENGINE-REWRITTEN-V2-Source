@@ -11,9 +11,14 @@ class SustainSplash extends FlxSprite {
 
     super();
 
-    frames = Paths.getSparrowAtlas('holdSplashes/holdSplash' + ClientPrefs.data.holdSplashSkin);
+    x = -50000;
+
+    frames = Paths.getSparrowAtlas('holdSplashes/holdSplash-' + ClientPrefs.data.holdSplashSkin);
     animation.addByPrefix('hold', 'hold', 24, true);
     animation.addByPrefix('end', 'end', 24, false);
+    animation.play('hold', true, false, 0);
+    animation.curAnim.frameRate = frameRate;
+    animation.curAnim.looped = true;
 
     destroyTimer = new FlxTimer();
   }
@@ -38,10 +43,6 @@ class SustainSplash extends FlxSprite {
     var tailEnd:Note = !daNote.isSustainNote ? daNote.tail[daNote.tail.length - 1] : daNote.parent.tail[daNote.parent.tail.length - 1];
 
     tailEnd.extraData['holdSplash'] = this;
-
-    animation.play('hold', true, false, 0);
-    animation.curAnim.frameRate = frameRate;
-    animation.curAnim.looped = true;
 
     clipRect = new flixel.math.FlxRect(0, !PlayState.isPixelStage ? 0 : -210, frameWidth, frameHeight);
 

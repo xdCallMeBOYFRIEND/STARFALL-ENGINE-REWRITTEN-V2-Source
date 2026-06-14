@@ -1037,8 +1037,6 @@ class PlayState extends MusicBeatState
 			setOnScripts('startedCountdown', true);
 			callOnScripts('onCountdownStarted');
 
-			updateIconsPosition(false); //The opponent icon is slightly offset before the first beat hit of the song
-
 			var swagCounter:Int = 0;
 			if (startOnTime > 0) {
 				clearNotesBefore(startOnTime);
@@ -3312,7 +3310,7 @@ class PlayState extends MusicBeatState
 		if (!note.isSustainNote && noteRows[note.mustPress?0:1][note.row].length > 1)
 		{
 			var animToPlay:String = singAnimations[Std.int(Math.abs(Math.min(singAnimations.length-1, note.noteData)))] + note.animSuffix;
-			if (note.noteType == "Ghost Note" || char.mostRecentRow != note.row)
+			if (note.noteType == "Ghost Note")
 				{
 					char.playGhostAnim(note.noteData, animToPlay, true);
 					char.holdTimer = 0;
@@ -3321,18 +3319,17 @@ class PlayState extends MusicBeatState
 				{
 				final ghostAnim:String = char.getAnimationName();
 				
-				var result:Dynamic = callOnLuas('onGhostAnim', [notes.members.indexOf(note)]);
-				if (Math.abs(char.lastHitTime - note.strumTime) < 3 && ClientPrefs.data.ghostsAllowed &&
-					(result != LuaUtils.Function_Stop && result != LuaUtils.Function_StopHScript && result != LuaUtils.Function_StopAll)) callOnHScript('onGhostAnim', [note]);
+				var result:Dynamic = callOnScripts('onGhostAnim', [ghostAnim, note]);
+				if (!note.isSustainNote && Math.abs(char.lastHitTime - note.strumTime) < 3 && ClientPrefs.data.ghostsAllowed && result != LuaUtils.Function_Stop && result != LuaUtils.Function_StopHScript && result != LuaUtils.Function_StopAll) callOnScripts('onGhostAnim', [ghostAnim, note]);
 					{
-						char.playGhostAnim(note.noteData, ghostAnim, true);
+						char.playGhostAnim(note.noteData, ghostAnim, true); //For some reason it's causing it to create a secondary ghost for the direction that the character is already doing, and I'm not quite sure why that is so could someone perhaps look into it? I've tried what I could but to no avail
 						char.holdTimer = 0;
 					}
 				
 					char.playAnim(animToPlay, true);
 					char.holdTimer = 0;
 				
-					if (!note.isSustainNote || noteRows[note.mustPress?0:1][note.row].length > 1 && note.prevNote.isSustainNote) char.lastHitTime = note.strumTime;
+					if (!note.isSustainNote || note.prevNote?.isSustainNote) char.lastHitTime = note.strumTime;
 				}
 			}
 	}
