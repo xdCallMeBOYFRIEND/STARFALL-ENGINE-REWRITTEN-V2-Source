@@ -1,5 +1,7 @@
 package states;
 
+import sys.thread.Thread;
+
 import backend.Highscore;
 import backend.StageData;
 import backend.WeekData;
@@ -282,6 +284,11 @@ class PlayState extends MusicBeatState
 	// Callbacks for stages
 	public var startCallback:Void->Void = null;
 	public var endCallback:Void->Void = null;
+
+	private var shutdownThread:Bool = false;
+	private var gameFroze:Bool = false;
+	private var requiresSyncing:Bool = false;
+	private var lastCorrectSongPos:Float = -1.0;
 
 	private static var _lastLoadedModDirectory:String = '';
 	public static var nextReloadAll:Bool = false;
@@ -1123,7 +1130,7 @@ class PlayState extends MusicBeatState
 		spr.screenCenter();
 		spr.antialiasing = antialias;
 		insert(members.indexOf(noteGroup), spr);
-		FlxTween.tween(spr, {/*y: spr.y + 100,*/ alpha: 0}, Conductor.crochet / 1000, {
+		FlxTween.tween(spr, {y: spr.y + 25, alpha: 0}, Conductor.crochet / 1000, {
 			ease: FlxEase.cubeInOut,
 			onComplete: function(twn:FlxTween)
 			{
@@ -1342,6 +1349,7 @@ class PlayState extends MusicBeatState
 		#end
 		setOnScripts('songLength', songLength);
 		callOnScripts('onSongStart');
+		runSongSyncThread();
 	}
 
 	private var noteTypes:Array<String> = [];
@@ -1691,6 +1699,9 @@ class PlayState extends MusicBeatState
 	#if DISCORD_ALLOWED
 	override public function onFocus():Void
 	{
+		shutdownThread = false;
+		runSongSyncThread();
+
 		super.onFocus();
 		if (!paused && health > 0)
 		{
@@ -1700,6 +1711,8 @@ class PlayState extends MusicBeatState
 
 	override public function onFocusLost():Void
 	{
+		shutdownThread = true;
+
 		super.onFocusLost();
 		if (!paused && health > 0 && autoUpdateRPC)
 		{
@@ -1995,11 +2008,18 @@ class PlayState extends MusicBeatState
 	}
 	public var updateIconAnims:Bool = true;
 
+	//Making these into variables that can be edited for future use
+	public var WINNING_RANGE:Float = 80;
+	public var LOSING_RANGE:Float = 20;
+
 	public function updateIconsAnimation()
 	{
 		if (!updateIconAnims) return;
-		iconP1.updateIconAnim(healthBar.percent * 0.01);
-		iconP2.updateIconAnim((100 - healthBar.percent) * 0.01);
+		var isHealthBarPercentLessThan20:Bool = healthBar.percent < LOSING_RANGE;
+		var isHealthBarPercentGreaterThan80:Bool = healthBar.percent > WINNING_RANGE;
+	
+		iconP1.animation.curAnim.curFrame = (isHealthBarPercentLessThan20 ? 1 : ((isHealthBarPercentGreaterThan80 && iconP1.hasWinning) ? 2 : 0));
+		iconP2.animation.curAnim.curFrame = (isHealthBarPercentGreaterThan80 ? 1 : ((isHealthBarPercentLessThan20 && iconP2.hasWinning) ? 2 : 0));
 	}
 
 	var iconsAnimations:Bool = true;
@@ -2148,6 +2168,42 @@ class PlayState extends MusicBeatState
 			}
 		}
 		return false;
+	}
+
+	function checkForResync()
+	{
+		if (endingSong || paused || shutdownThread) return;
+
+		if (requiresSyncing)
+		{
+			requiresSyncing = false;
+			setSongTime(lastCorrectSongPos);
+		}
+
+		gameFroze = false;
+	}
+
+	public function runSongSyncThread()
+	{
+		Thread.create(function() {
+			while (!endingSong && !paused && !shutdownThread)
+			{
+				if (requiresSyncing) continue;
+
+				if (gameFroze)
+				{
+					lastCorrectSongPos = Conductor.songPosition;
+					requiresSyncing = true;
+					continue;
+				}
+				gameFroze = true;
+
+				Sys.sleep(0.25);
+			}
+		});
+
+		if (!FlxG.signals.preUpdate.has(checkForResync))
+			FlxG.signals.preUpdate.add(checkForResync);
 	}
 
 	public function checkEventNote() {
@@ -3158,7 +3214,7 @@ class PlayState extends MusicBeatState
 					if(char.getAnimationName() == holdAnim || char.getAnimationName() == holdAnim + '-loop') canPlay = false;
 				}
 
-				if(canPlay) char.playAnim(animToPlay, true);
+				if(!(char.vSliceSustains && note.isSustainNote) && canPlay) char.playAnim(animToPlay, true);
 				char.holdTimer = 0;
 
 				ghostAnimation(char, note);
@@ -3221,7 +3277,7 @@ class PlayState extends MusicBeatState
 						if(char.getAnimationName() == holdAnim || char.getAnimationName() == holdAnim + '-loop') canPlay = false;
 					}
 	
-					if(canPlay) char.playAnim(animToPlay, true);
+					if(!(char.vSliceSustains && note.isSustainNote) && canPlay) char.playAnim(animToPlay, true);
 					char.holdTimer = 0;
 
 					if(note.noteType == 'Hey!')
@@ -3307,10 +3363,10 @@ class PlayState extends MusicBeatState
 
 	public function ghostAnimation(char:Character, note:Note)
 	{
-		if (!note.isSustainNote && noteRows[note.mustPress?0:1][note.row].length > 1)
+		if (!char.vSliceSustains || !note.isSustainNote)
 		{
 			var animToPlay:String = singAnimations[Std.int(Math.abs(Math.min(singAnimations.length-1, note.noteData)))] + note.animSuffix;
-			if (note.noteType == "Ghost Note")
+			if (!(char.vSliceSustains) || note.noteType == "Ghost Note")
 				{
 					char.playGhostAnim(note.noteData, animToPlay, true);
 					char.holdTimer = 0;

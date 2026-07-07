@@ -382,6 +382,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		{
 			character.isPlayer = !character.isPlayer;
 			character.flipX = !character.flipX;
+			reapplyCurrentOffset();
 			updateCharacterPositions();
 			updatePointerPos(false);
 		};
@@ -612,6 +613,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 	var healthColorStepperR:PsychUINumericStepper;
 	var healthColorStepperG:PsychUINumericStepper;
 	var healthColorStepperB:PsychUINumericStepper;
+	var vSliceSusCheckBox:PsychUICheckBox;
 	function addCharacterUI()
 	{
 		var tab_group = UI_characterbox.getTab('Character').menu;
@@ -650,6 +652,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		flipXCheckBox.onClick = function() {
 			character.originalFlipX = !character.originalFlipX;
 			character.flipX = (character.originalFlipX != character.isPlayer);
+			reapplyCurrentOffset();
 		};
 
 		noAntialiasingCheckBox = new PsychUICheckBox(flipXCheckBox.x, flipXCheckBox.y + 40, "No Antialiasing", 80);
@@ -676,6 +679,12 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		healthColorStepperG = new PsychUINumericStepper(singDurationStepper.x + 65, saveCharacterButton.y, 20, character.healthColorArray[1], 0, 255, 0);
 		healthColorStepperB = new PsychUINumericStepper(singDurationStepper.x + 130, saveCharacterButton.y, 20, character.healthColorArray[2], 0, 255, 0);
 
+		vSliceSusCheckBox = new PsychUICheckBox(flipXCheckBox.x + flipXCheckBox.width + 15, flipXCheckBox.y - 40, "V-Slice Sustains", 80);
+		vSliceSusCheckBox.checked != character.vSliceSustains;
+		vSliceSusCheckBox.onClick = function() {
+			character.vSliceSustains = vSliceSusCheckBox.checked; //Fsr the option keeps flipping back after a little bit and it seems to be flipped from what it should be, as it being "true" in the json means it's actually false and vice versa
+		};
+
 		tab_group.add(new FlxText(15, imageInputText.y - 18, 100, 'Image file name:'));
 		tab_group.add(new FlxText(15, healthIconInputText.y - 18, 100, 'Health icon name:'));
 		tab_group.add(new FlxText(15, vocalsInputText.y - 18, 100, 'Vocals File Postfix:'));
@@ -701,6 +710,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		tab_group.add(healthColorStepperG);
 		tab_group.add(healthColorStepperB);
 		tab_group.add(saveCharacterButton);
+		tab_group.add(vSliceSusCheckBox);
 	}
 
 	public function UIEvent(id:String, sender:Dynamic) {
@@ -736,6 +746,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 				character.jsonScale = sender.value;
 				character.scale.set(character.jsonScale, character.jsonScale);
 				character.updateHitbox();
+				reapplyCurrentOffset();
 				updatePointerPos(false);
 				unsavedProgress = true;
 			}
@@ -1168,6 +1179,16 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		animsTxt.text = intendText;
 	}
 
+	function reapplyCurrentOffset() {
+		if (character == null)
+			return;
+		var name = character.getAnimationName();
+		if (name != null && name.length > 0 && character.animOffsets.exists(name)) {
+			var raw = character.animOffsets.get(name);
+			character.applyAnimOffsets(raw[0], raw[1]);
+		}
+	}
+
 	inline function updateCharacterPositions()
 	{
 		if((character != null && !character.isPlayer) || (character == null && predictCharacterIsNotPlayer(_char))) character.setPosition(dadPosition.x, dadPosition.y);
@@ -1297,6 +1318,8 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 			"no_antialiasing": character.noAntialiasing,
 			"healthbar_colors": character.healthColorArray,
 			"vocals_file": character.vocalsFile,
+			"vSliceSustains": character.vSliceSustains,
+			"ghostsEnabled": character.ghostsEnabled,
 			"_editor_isPlayer": character.isPlayer
 		};
 

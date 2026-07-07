@@ -27,6 +27,8 @@ typedef CharacterFile = {
 	var healthbar_colors:Array<Int>;
 	var vocals_file:String;
 	@:optional var _editor_isPlayer:Null<Bool>;
+	@:optional var vSliceSustains:Null<Bool>;
+	@:optional var ghostsEnabled:Null<Bool>;
 }
 
 typedef AnimArray = {
@@ -45,8 +47,9 @@ class Character extends FlxSprite
 	**/
 	public static final DEFAULT_CHARACTER:String = 'bf';
 
-	public var mostRecentRow:Int = 0; // for ghost anims n shit
-	public var animOffsets:Map<String, Array<Dynamic>>;
+	public var lastHitTime:Float = -1000;
+	
+	public var animOffsets:Map<String, Array<Float>>;
 	public var debugMode:Bool = false;
 	public var extraData:Map<String, Dynamic> = new Map<String, Dynamic>();
 
@@ -71,13 +74,13 @@ class Character extends FlxSprite
 	public var cameraPosition:Array<Float> = [0, 0];
 	public var healthColorArray:Array<Int> = [255, 0, 0];
 
+	public var vSliceSustains:Bool = false;
+
 	public var ghostDisplacement:Float = 40;
 	public var ghostsEnabled:Bool = true;
 	public var doubleGhosts:Array<FlxSprite> = [];
 	public var ghostAlpha = 0.6;
 	public var ghostTweenGrp:Array<FlxTween> = [];
-
-	public var lastHitTime:Float = -1000;
 
 	public var missingCharacter:Bool = false;
 	public var missingText:FlxText;
@@ -88,8 +91,15 @@ class Character extends FlxSprite
 	public var imageFile:String = '';
 	public var jsonScale:Float = 1;
 	public var noAntialiasing:Bool = false;
+	public var daGhosts:Bool = true;
 	public var originalFlipX:Bool = false;
 	public var editorIsPlayer:Null<Bool> = null;
+
+	public var correctFlippedOffsets:Bool = true;
+	public var scalableOffsets:Bool = true;
+
+	public var baseFlipX:Bool = false;
+	public var baseFlipY:Bool = false;
 
 	public function new(x:Float, y:Float, ?character:String = 'bf', ?isPlayer:Bool = false)
 	{
@@ -97,7 +107,7 @@ class Character extends FlxSprite
 
 		animation = new PsychAnimationController(this);
 
-		animOffsets = new Map<String, Array<Dynamic>>();
+		animOffsets = new Map<String, Array<Float>>();
 		this.isPlayer = isPlayer;
 		changeCharacter(character);
 
@@ -122,6 +132,7 @@ class Character extends FlxSprite
 			ghost.visible = false;
 			ghost.antialiasing = antialiasing;
 			ghost.alpha = ghostAlpha;
+			ghost.blend = HARDLIGHT; //Impostor moment lol
 			doubleGhosts.push(ghost);
 		}
 	}
@@ -206,7 +217,7 @@ class Character extends FlxSprite
 
 		if(json.assetPath == null) {
 			imageFile = json.image;
-			jsonScale = json.scale;
+			jsonScale = jsonScale = json.scale > 0 ? json.scale : 1;
 			if(json.scale != 1) {
 				scale.set(jsonScale, jsonScale);
 				updateHitbox();
@@ -226,9 +237,22 @@ class Character extends FlxSprite
 			originalFlipX = (json.flip_x == true);
 			editorIsPlayer = json._editor_isPlayer;
 
+			//Double ghosts toggle
+			daGhosts = (json.ghostsEnabled == true);
+			ghostsEnabled = ClientPrefs.data.ghostsAllowed ? !daGhosts : false; //Dobule note ghosts accidentally didn't respect if you had the setting disabled lmao
+
+			if (json.vSliceSustains != null)
+				vSliceSustains = (json.vSliceSustains == false);
+
 			// antialiasing
 			noAntialiasing = (json.no_antialiasing == true);
 			antialiasing = ClientPrefs.data.antialiasing ? !noAntialiasing : false;
+
+			//Auto-correction for offsets
+			if (json.correctFlippedOffsets != null)
+				correctFlippedOffsets = (json.correctFlippedOffsets == true);
+			if (json.scalableOffsets != null)
+				scalableOffsets = (json.scalableOffsets == true);
 
 			// animations
 			animationsArray = json.animations;
@@ -237,7 +261,7 @@ class Character extends FlxSprite
 			imageFile = convertMultiSparrow(json.animations, imageFile);
 
 			if(json.scale != null) {
-				jsonScale = json.scale;
+				jsonScale = jsonScale = json.scale > 0 ? json.scale : 1;
 				if(json.scale != 1) {
 					scale.set(jsonScale, jsonScale);
 					updateHitbox();
@@ -305,6 +329,7 @@ class Character extends FlxSprite
 				#if flxanimate
 				else
 				{
+					var atlasFps:Null<Float> = (animFps > 0) ? cast animFps : null;
 					if(animIndices != null && animIndices.length > 0)
 						atlas.anim.addBySymbolIndices(animAnim, animName, animIndices, animFps, animLoop);
 					else
@@ -493,8 +518,8 @@ class Character extends FlxSprite
 
 		if (hasAnimation(AnimName))
 		{
-			var daOffset = animOffsets.get(AnimName);
-			offset.set(daOffset[0], daOffset[1]);
+			final daOffset = animOffsets.get(AnimName);
+			applyAnimOffsets(daOffset[0], daOffset[1]);
 		}
 		//else offset.set(0, 0);
 
@@ -577,6 +602,43 @@ class Character extends FlxSprite
 		animOffsets[name] = [x, y];
 	}
 
+	public function applyAnimOffsets(rawX:Float, rawY:Float) {
+		var ox:Float = rawX;
+		var oy:Float = rawY;
+
+		if (scalableOffsets) {
+			var base:Float = (jsonScale > 0) ? jsonScale : 1;
+			ox *= scale.x / base;
+			oy *= scale.y / base;
+		}
+
+		if (correctFlippedOffsets && !isAnimateAtlas) {
+			if (flipX != baseFlipX)
+				ox = (frameWidth * scale.x - width) - ox;
+			if (flipY != baseFlipY)
+				oy = (frameHeight * scale.y - height) - oy;
+		}
+		offset.set(ox, oy);
+	}
+
+	public function getAuthoredOffset():Array<Float> {
+		var ox:Float = offset.x;
+		var oy:Float = offset.y;
+
+		if (correctFlippedOffsets && !isAnimateAtlas) {
+			if (flipX != baseFlipX)
+				ox = (frameWidth * scale.x - width) - ox;
+			if (flipY != baseFlipY)
+				oy = (frameHeight * scale.y - height) - oy;
+		}
+		if (correctFlippedOffsets) {
+			var base:Float = (jsonScale > 0) ? jsonScale : 1;
+			ox /= scale.x / base;
+			oy /= scale.y / base;
+		}
+		return [ox, oy];
+	}
+
 	public function quickAnimAdd(name:String, anim:String)
 	{
 		animation.addByPrefix(name, anim, 24, false);
@@ -594,7 +656,6 @@ class Character extends FlxSprite
 		ghost.y = y;
 		ghost.flipX = flipX;
 		ghost.flipY = flipY;
-		ghost.blend = HARDLIGHT; //Impostor moment lol
 		ghost.alpha = alpha * ghostAlpha;
 		ghost.visible = visible;
 		ghost.color = FlxColor.fromRGB(healthColorArray[0], healthColorArray[1], healthColorArray[2]);
@@ -637,7 +698,7 @@ class Character extends FlxSprite
 		if (animOffsets.exists(animName))
 		{
 			final daOffset = animOffsets.get(animName);
-			ghost.offset.set(daOffset[0] * scale.x, daOffset[1] * scale.y);
+			applyAnimOffsets(daOffset[0], daOffset[1]);
 		}
 	}
 
@@ -672,6 +733,8 @@ class Character extends FlxSprite
 					missingText.draw();
 				}
 			}
+			alpha = lastAlpha;
+			color = lastColor;
 			return;
 		}
 		if (ghostsEnabled)
@@ -714,10 +777,13 @@ class Character extends FlxSprite
 			atlas.color = color;
 		}
 	}
+	#end
 
 	public override function destroy()
 	{
+		#if flxanimate
 		atlas = FlxDestroyUtil.destroy(atlas);
+		#end
 
 		if (ghostTweenGrp != null && ghostTweenGrp.length > 0)
 		{
@@ -731,5 +797,4 @@ class Character extends FlxSprite
 
 		super.destroy();
 	}
-	#end
 }
