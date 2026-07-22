@@ -689,7 +689,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 			character.vSliceSustains = vSliceSusCheckBox.checked; //Fsr the option keeps flipping back after a little bit and it seems to be flipped from what it should be, as it being "true" in the json means it's actually false and vice versa
 		};
 
-		freezedSusCheckBox = new PsychUICheckBox(vSliceSusCheckBox.x + vSliceSusCheckBox.width + 15, flipXCheckBox.y - 40, "Frozen Sustains", 80);
+		freezedSusCheckBox = new PsychUICheckBox(vSliceSusCheckBox.x + vSliceSusCheckBox.width + 5, flipXCheckBox.y - 40, "Frozen Sustains", 80);
 		freezedSusCheckBox.checked = character.frozenSustains;
 		freezedSusCheckBox.onClick = function() {
 			character.frozenSustains = freezedSusCheckBox.checked; //Fsr the option keeps flipping back after a little bit and it seems to be flipped from what it should be, as it being "true" in the json means it's actually false and vice versa

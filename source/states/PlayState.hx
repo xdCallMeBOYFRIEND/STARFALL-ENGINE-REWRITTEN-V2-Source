@@ -3268,10 +3268,11 @@ class PlayState extends MusicBeatState
 				}
 
 				if(!(char.vSliceSustains && note.isSustainNote) && canPlay) char.playAnim(animToPlay, true);
-				char.animation.curAnim.paused = (char.frozenSustains && note.isSustainNote && !note.animation.curAnim.name.endsWith('end') && canPlay);
+				char.animation.curAnim.paused = (char.frozenSustains && StringTools.endsWith(note.animation.curAnim.name, 'hold') && canPlay);
 				char.holdTimer = 0;
 
-				//ghostAnimation(char, note);
+				if (noteRows[note.mustPress ? 0 : 1][note.row] != null && noteRows[note.mustPress ? 0 : 1][note.row].length > 1)
+					ghostAnimation(char, note);
 			}
 		}
 
@@ -3346,7 +3347,8 @@ class PlayState extends MusicBeatState
 							char.heyTimer = 0.6;
 						}
 					}
-					//ghostAnimation(char, note);
+					if (noteRows[note.mustPress ? 0 : 1][note.row] != null && noteRows[note.mustPress ? 0 : 1][note.row].length > 1)
+						ghostAnimation(char, note);
 				}
 			}
 
@@ -3434,18 +3436,17 @@ class PlayState extends MusicBeatState
 				else
 				{
 				final ghostAnim:String = char.getAnimationName();
-				
-				var result:Dynamic = callOnScripts('onGhostAnim', [ghostAnim, note]);
-				if (!note.isSustainNote && Math.abs(char.lastHitTime - note.strumTime) > 1 && ClientPrefs.data.ghostsAllowed && result != LuaUtils.Function_Stop && result != LuaUtils.Function_StopHScript && result != LuaUtils.Function_StopAll) callOnScripts('onGhostAnim', [ghostAnim, note]);
+
+				if (!note.isSustainNote && Math.abs(char.lastHitTime - note.strumTime) < 3 && ClientPrefs.data.ghostsAllowed)
 					{
-						char.playGhostAnim(note.noteData, ghostAnim, true); //For some reason it's causing it to create a secondary ghost for the direction that the character is already doing, and I'm not quite sure why that is so could someone perhaps look into it? I've tried what I could but to no avail
+						char.playGhostAnim(note.noteData, ghostAnim, true);
 						char.holdTimer = 0;
 					}
 				
 					char.playAnim(animToPlay, true);
 					char.holdTimer = 0;
 				
-					if (!note.isSustainNote || note.prevNote?.isSustainNote) char.lastHitTime = note.strumTime;
+					if (!note.isSustainNote || note.prevNote.isSustainNote) char.lastHitTime = note.strumTime;
 				}
 			}
 	}

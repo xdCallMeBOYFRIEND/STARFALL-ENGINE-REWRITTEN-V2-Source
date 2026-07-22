@@ -94,7 +94,6 @@ class Character extends FlxSprite
 	public var imageFile:String = '';
 	public var jsonScale:Float = 1;
 	public var noAntialiasing:Bool = false;
-	public var daGhosts:Bool = true;
 	public var originalFlipX:Bool = false;
 	public var editorIsPlayer:Null<Bool> = null;
 
@@ -113,8 +112,6 @@ class Character extends FlxSprite
 		animOffsets = new Map<String, Array<Float>>();
 		this.isPlayer = isPlayer;
 		changeCharacter(character);
-
-		genGhosts();
 		
 		switch(curCharacter)
 		{
@@ -127,9 +124,9 @@ class Character extends FlxSprite
 		}
 	}
 
-	function genGhosts()
+	function genGhosts(count:Int):Void
 	{
-		for (i in 0...4)
+		while (doubleGhosts.length < count)
 		{
 			final ghost = new FlxSprite();
 			ghost.visible = false;
@@ -217,6 +214,8 @@ class Character extends FlxSprite
 		}
 		#end
 
+		genGhosts(4);
+
 		if(json.assetPath == null) {
 			imageFile = json.image;
 			jsonScale = jsonScale = json.scale > 0 ? json.scale : 1;
@@ -240,14 +239,14 @@ class Character extends FlxSprite
 			editorIsPlayer = json._editor_isPlayer;
 
 			if (json.vSus != null)
-				vSliceSustains = false;
+				vSliceSustains = (json.vSus);
 
 			if (json.freezeSus != null)
-				frozenSustains = false;
+				frozenSustains = (json.freezeSus);
 
 			// Double ghosts toggle
-			daGhosts = (json.doubleGhosts == true);
-			ghostsEnabled = ClientPrefs.data.ghostsAllowed ? !daGhosts : false;
+			if (json.doubleGhosts != null)
+				ghostsEnabled = (json.doubleGhosts);
 
 			// antialiasing
 			noAntialiasing = (json.no_antialiasing == true);
@@ -652,10 +651,16 @@ class Character extends FlxSprite
 
 	public function playGhostAnim(ghostID = 0, animName:String, force:Bool = false, reversed:Bool = false, frame:Int = 0)
 	{
+		if (ghostID >= doubleGhosts.length) genGhosts(ghostID + 1);
 		var ghost:FlxSprite = doubleGhosts[ghostID];
+		if (ghost == null) return trace('What is $ghostID');
+		if (ghost.frames == null) {
+			ghost.frames = frames;
+			ghost.animation.copyFrom(animation);
+		}
 		ghost.scale.copyFrom(scale);
-		ghost.frames = frames;
-		ghost.animation.copyFrom(animation);
+		ghost.offset.copyFrom(offset);
+		ghost.origin.copyFrom(origin);
 		ghost.antialiasing = antialiasing;
 		ghost.shader = shader;
 		ghost.x = x;
