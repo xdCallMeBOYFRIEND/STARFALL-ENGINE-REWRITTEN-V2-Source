@@ -415,6 +415,9 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 				healthbar_colors: [161, 161, 161],
 				camera_position: [0, 0],
 				position: [0, 0],
+				vSus: false,
+				freezeSus: false,
+				doubleGhosts: true,
 				vocals_file: null
 			};
 
@@ -614,6 +617,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 	var healthColorStepperG:PsychUINumericStepper;
 	var healthColorStepperB:PsychUINumericStepper;
 	var vSliceSusCheckBox:PsychUICheckBox;
+	var freezedSusCheckBox:PsychUICheckBox;
 	function addCharacterUI()
 	{
 		var tab_group = UI_characterbox.getTab('Character').menu;
@@ -680,9 +684,15 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		healthColorStepperB = new PsychUINumericStepper(singDurationStepper.x + 130, saveCharacterButton.y, 20, character.healthColorArray[2], 0, 255, 0);
 
 		vSliceSusCheckBox = new PsychUICheckBox(flipXCheckBox.x + flipXCheckBox.width + 15, flipXCheckBox.y - 40, "V-Slice Sustains", 80);
-		vSliceSusCheckBox.checked != character.vSliceSustains;
+		vSliceSusCheckBox.checked = character.vSliceSustains;
 		vSliceSusCheckBox.onClick = function() {
 			character.vSliceSustains = vSliceSusCheckBox.checked; //Fsr the option keeps flipping back after a little bit and it seems to be flipped from what it should be, as it being "true" in the json means it's actually false and vice versa
+		};
+
+		freezedSusCheckBox = new PsychUICheckBox(vSliceSusCheckBox.x + vSliceSusCheckBox.width + 15, flipXCheckBox.y - 40, "Frozen Sustains", 80);
+		freezedSusCheckBox.checked = character.frozenSustains;
+		freezedSusCheckBox.onClick = function() {
+			character.frozenSustains = freezedSusCheckBox.checked; //Fsr the option keeps flipping back after a little bit and it seems to be flipped from what it should be, as it being "true" in the json means it's actually false and vice versa
 		};
 
 		tab_group.add(new FlxText(15, imageInputText.y - 18, 100, 'Image file name:'));
@@ -711,6 +721,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		tab_group.add(healthColorStepperB);
 		tab_group.add(saveCharacterButton);
 		tab_group.add(vSliceSusCheckBox);
+		tab_group.add(freezedSusCheckBox);
 	}
 
 	public function UIEvent(id:String, sender:Dynamic) {
@@ -1318,8 +1329,9 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 			"no_antialiasing": character.noAntialiasing,
 			"healthbar_colors": character.healthColorArray,
 			"vocals_file": character.vocalsFile,
-			"vSliceSustains": character.vSliceSustains,
-			"ghostsEnabled": character.ghostsEnabled,
+			"vSus": character.vSliceSustains,
+			"freezeSus": character.frozenSustains,
+			"doubleGhosts": character.ghostsEnabled,
 			"_editor_isPlayer": character.isPlayer
 		};
 

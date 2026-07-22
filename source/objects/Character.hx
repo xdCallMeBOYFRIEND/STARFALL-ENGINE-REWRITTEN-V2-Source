@@ -27,8 +27,9 @@ typedef CharacterFile = {
 	var healthbar_colors:Array<Int>;
 	var vocals_file:String;
 	@:optional var _editor_isPlayer:Null<Bool>;
-	@:optional var vSliceSustains:Null<Bool>;
-	@:optional var ghostsEnabled:Null<Bool>;
+	@:optional var vSus:Null<Bool>;
+	@:optional var freezeSus:Null<Bool>;
+	@:optional var doubleGhosts:Null<Bool>;
 }
 
 typedef AnimArray = {
@@ -75,6 +76,8 @@ class Character extends FlxSprite
 	public var healthColorArray:Array<Int> = [255, 0, 0];
 
 	public var vSliceSustains:Bool = false;
+
+	public var frozenSustains:Bool = false;
 
 	public var ghostDisplacement:Float = 40;
 	public var ghostsEnabled:Bool = true;
@@ -132,7 +135,6 @@ class Character extends FlxSprite
 			ghost.visible = false;
 			ghost.antialiasing = antialiasing;
 			ghost.alpha = ghostAlpha;
-			ghost.blend = HARDLIGHT; //Impostor moment lol
 			doubleGhosts.push(ghost);
 		}
 	}
@@ -237,12 +239,15 @@ class Character extends FlxSprite
 			originalFlipX = (json.flip_x == true);
 			editorIsPlayer = json._editor_isPlayer;
 
-			//Double ghosts toggle
-			daGhosts = (json.ghostsEnabled == true);
-			ghostsEnabled = ClientPrefs.data.ghostsAllowed ? !daGhosts : false; //Dobule note ghosts accidentally didn't respect if you had the setting disabled lmao
+			if (json.vSus != null)
+				vSliceSustains = false;
 
-			if (json.vSliceSustains != null)
-				vSliceSustains = (json.vSliceSustains == false);
+			if (json.freezeSus != null)
+				frozenSustains = false;
+
+			// Double ghosts toggle
+			daGhosts = (json.doubleGhosts == true);
+			ghostsEnabled = ClientPrefs.data.ghostsAllowed ? !daGhosts : false;
 
 			// antialiasing
 			noAntialiasing = (json.no_antialiasing == true);
@@ -615,6 +620,7 @@ class Character extends FlxSprite
 		if (correctFlippedOffsets && !isAnimateAtlas) {
 			if (flipX != baseFlipX)
 				ox = (frameWidth * scale.x - width) - ox;
+			
 			if (flipY != baseFlipY)
 				oy = (frameHeight * scale.y - height) - oy;
 		}
@@ -784,6 +790,7 @@ class Character extends FlxSprite
 		#if flxanimate
 		atlas = FlxDestroyUtil.destroy(atlas);
 		#end
+		missingText = FlxDestroyUtil.destroy(missingText);
 
 		if (ghostTweenGrp != null && ghostTweenGrp.length > 0)
 		{
