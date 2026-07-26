@@ -161,6 +161,14 @@ class CoolUtil
 	 * 
 	 * your decay should be around 1 - 25
 	 */
+
+	public static inline function fpsLerp(v1:Float, v2:Float, ratio:Float):Float {
+		return FlxMath.lerp(v1, v2, getFPSRatio(ratio));
+	}
+
+	public static inline function getFPSRatio(ratio:Float, ?delta:Float):Float
+		return 1.0 - Math.pow(1.0 - ratio, (delta == null ? FlxG.elapsed : delta) * 60);
+
 	public static function decayLerp(a:Float, b:Float, decay:Float, elapsed:Float) return b + (a - b) * Math.exp(-decay * elapsed);
 
 	/**

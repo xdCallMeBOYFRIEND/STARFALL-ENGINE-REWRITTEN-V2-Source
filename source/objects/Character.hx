@@ -662,7 +662,6 @@ class Character extends FlxSprite
 		ghost.offset.copyFrom(offset);
 		ghost.origin.copyFrom(origin);
 		ghost.antialiasing = antialiasing;
-		ghost.shader = shader;
 		ghost.x = x;
 		ghost.y = y;
 		ghost.flipX = flipX;

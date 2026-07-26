@@ -131,7 +131,6 @@ class PlayState extends MusicBeatState
 	public static var isPixelStage(get, never):Bool;
 
 	public var markupEnabled:Bool = false;
-	public var colorRatings:Bool = false; //Inspired by the "Enabled DX" settings for the V4 UI in Impostor Legacy
 	public var rankColors:Map<String, FlxColor> = [
 		"EFC" => 0xFFBB79FF,
 		"SFC" => 0xff2DE356,
@@ -1999,7 +1998,7 @@ class PlayState extends MusicBeatState
 	{
 		if (!updateIconScale) return;
 		final rate = HealthIcon.DEFAULT_LERP_RATE * playbackRate; // Not sure if this is gonna like break certain mods or scripts but uhhhhhhh I guess we'll find out
-		
+
 		var mult:Float = FlxMath.lerp(1, iconP1.scale.x, Math.exp(-elapsed * rate));
 		iconP1.scale.set(mult, mult);
 		iconP1.updateHitbox();
@@ -2810,7 +2809,6 @@ class PlayState extends MusicBeatState
 		rating.x += ClientPrefs.data.comboOffset[0];
 		rating.y -= ClientPrefs.data.comboOffset[1];
 		rating.antialiasing = antialias;
-		if (colorRatings) rating.color = scoreTxt.color ?? FlxColor.WHITE;
 
 		var comboSpr = new FlxSprite().loadGraphic(Paths.image(uiFolder + 'combo' + uiPostfix));
 		comboSpr.screenCenter();
@@ -2823,7 +2821,6 @@ class PlayState extends MusicBeatState
 		comboSpr.antialiasing = antialias;
 		comboSpr.y += 60;
 		comboSpr.velocity.x += FlxG.random.int(1, 10) * playbackRate;
-		if (colorRatings) comboSpr.color = scoreTxt.color ?? FlxColor.WHITE;
 		comboGroup.add(rating);
 
 		if (!PlayState.isPixelStage)
@@ -2884,7 +2881,6 @@ class PlayState extends MusicBeatState
 			numScore.velocity.x = FlxG.random.float(-5, 5) * playbackRate;
 			numScore.visible = !ClientPrefs.data.hideHud;
 			numScore.antialiasing = antialias;
-			if (colorRatings) numScore.color = scoreTxt.color ?? FlxColor.WHITE;
 
 			//if (combo >= 10 || combo == 0)
 			if(showComboNum)
@@ -3268,10 +3264,10 @@ class PlayState extends MusicBeatState
 				}
 
 				if(!(char.vSliceSustains && note.isSustainNote) && canPlay) char.playAnim(animToPlay, true);
-				char.animation.curAnim.paused = (char.frozenSustains && StringTools.endsWith(note.animation.curAnim.name, 'hold') && canPlay);
+				char.animPaused = (char.frozenSustains && StringTools.endsWith(note.animation.curAnim.name, 'hold') && canPlay);
 				char.holdTimer = 0;
 
-				if (noteRows[note.mustPress ? 0 : 1][note.row] != null && noteRows[note.mustPress ? 0 : 1][note.row].length > 1)
+				if (noteRows[note.mustPress ? 0 : 1][note.row] != null && noteRows[note.mustPress ? 0 : 1][note.row].length > 1 && ClientPrefs.data.ghostsAllowed)
 					ghostAnimation(char, note);
 			}
 		}
@@ -3335,7 +3331,7 @@ class PlayState extends MusicBeatState
 					}
 	
 					if(!(char.vSliceSustains && note.isSustainNote) && canPlay) char.playAnim(animToPlay, true);
-					char.animation.curAnim.paused = (char.frozenSustains && note.isSustainNote && !note.animation.curAnim.name.endsWith('end') && canPlay);
+					char.animPaused = (char.frozenSustains && StringTools.endsWith(note.animation.curAnim.name, 'hold') && canPlay);
 					char.holdTimer = 0;
 
 					if(note.noteType == 'Hey!')
@@ -3347,7 +3343,7 @@ class PlayState extends MusicBeatState
 							char.heyTimer = 0.6;
 						}
 					}
-					if (noteRows[note.mustPress ? 0 : 1][note.row] != null && noteRows[note.mustPress ? 0 : 1][note.row].length > 1)
+					if (noteRows[note.mustPress ? 0 : 1][note.row] != null && noteRows[note.mustPress ? 0 : 1][note.row].length > 1 && ClientPrefs.data.ghostsAllowed)
 						ghostAnimation(char, note);
 				}
 			}

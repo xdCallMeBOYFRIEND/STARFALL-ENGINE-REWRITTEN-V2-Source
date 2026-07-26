@@ -9,7 +9,7 @@ class HealthIcon extends FlxSprite
 	public var hasWinning:Bool = true;
 	public var char:String = '';
 
-	public function new(char:String = 'face', isPlayer:Bool = false, ?allowGPU:Bool = false)
+	public function new(char:String = 'face', isPlayer:Bool = false, ?allowGPU:Bool = true)
 	{
 		super();
 		this.isPlayer = isPlayer;
@@ -26,7 +26,7 @@ class HealthIcon extends FlxSprite
 	}
 
 	private var iconOffsets:Array<Float> = [0, 0];
-	public function changeIcon(char:String, ?allowGPU:Bool = false) {
+	public function changeIcon(char:String, ?allowGPU:Bool = true) {
 		if(this.char != char) {
 			var curAnimation:Int = 0;
 			var name:String = 'icons/' + char;
