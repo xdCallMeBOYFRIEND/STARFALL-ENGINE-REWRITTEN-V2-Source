@@ -39,6 +39,7 @@ class HealthIcon extends FlxSprite
 			if (graphic.width == 450) hasWin = true;
 			else if (graphic.width == 150) singleIcon = true;
 			var iSize:Float = Math.round(graphic.width / graphic.height);
+			if (iSize < 1) iSize = 1;
 			loadGraphic(graphic, true, Math.floor(graphic.width / iSize), Math.floor(graphic.height));
 			iconOffsets[0] = (width - 150) / iSize;
 			iconOffsets[1] = (height - 150) / iSize;

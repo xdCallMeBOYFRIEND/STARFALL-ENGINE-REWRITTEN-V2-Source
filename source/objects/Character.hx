@@ -179,9 +179,10 @@ class Character extends FlxSprite
 	public function loadCharacterFile(json:Dynamic)
 	{
 		isAnimateAtlas = false;
+		swfMode = (json.swfMode == true);
 
 		var path:String = json.assetPath == null? json.image : StringTools.replace(json.assetPath, 'shared:', '');
-		#if flxanimate
+		#if flixel_animate
 		var animToFind:String = Paths.getPath('images/' + path + '/Animation.json', TEXT);
 		if (#if MODS_ALLOWED FileSystem.exists(animToFind) || #end Assets.exists(animToFind))
 			isAnimateAtlas = true;
@@ -197,14 +198,13 @@ class Character extends FlxSprite
 			path = convertMultiSparrow(json.animations, path);
 			frames = Paths.getMultiAtlas(path.split(','));
 		}
-		#if flxanimate
+		#if flixel_animate
 		else
 		{
 			atlas = new FlxAnimate();
-			atlas.showPivot = false;
 			try
 			{
-				Paths.loadAnimateAtlas(atlas, path);
+				Paths.loadAnimateAtlas(atlas, json.image, null, null, swfMode);
 			}
 			catch(e:haxe.Exception)
 			{
@@ -291,6 +291,7 @@ class Character extends FlxSprite
 
 			vocalsFile = '';
 			originalFlipX = (json.flipX == true);
+			baseFlipX = (json.isPlayer ? !originalFlipX : originalFlipX);
 
 			// antialiasing
 			noAntialiasing = json.isPixel != null ? json.isPixel : false;
@@ -330,7 +331,7 @@ class Character extends FlxSprite
 					else
 						animation.addByPrefix(animAnim, animName, animFps, animLoop);
 				}
-				#if flxanimate
+				#if flixel_animate
 				else
 				{
 					var atlasFps:Null<Float> = (animFps > 0) ? cast animFps : null;
@@ -345,7 +346,7 @@ class Character extends FlxSprite
 				else addOffset(anim.anim, 0, 0);
 			}
 		}
-		#if flxanimate
+		#if flixel_animate
 		if(isAnimateAtlas) copyAtlasValues();
 		#end
 		//trace('Loaded file to character ' + curCharacter);
@@ -540,23 +541,6 @@ class Character extends FlxSprite
 		}
 	}
 
-	public function flipAnims()
-	{
-		//rewrote it
-		for (anim in animationsArray){
-			if (anim.anim.contains("singRIGHT")){
-				var animSplit:Array<String> = anim.anim.split('singRIGHT');
-
-				if (animation.getByName('singRIGHT' + animSplit[1]) != null && animation.getByName('singLEFT' + animSplit[1]) != null)
-				{
-					var oldRight = animation.getByName('singRIGHT' + animSplit[1]).frames;
-					animation.getByName('singRIGHT' + animSplit[1]).frames = animation.getByName('singLEFT' + animSplit[1]).frames;
-					animation.getByName('singLEFT' + animSplit[1]).frames = oldRight;
-				}
-			}
-		}
-	}
-
 	function loadMappedAnims():Void
 	{
 		try
@@ -649,6 +633,8 @@ class Character extends FlxSprite
 		animation.addByPrefix(name, anim, 24, false);
 	}
 
+	public var swfMode:Bool = false;
+
 	public function playGhostAnim(ghostID = 0, animName:String, force:Bool = false, reversed:Bool = false, frame:Int = 0)
 	{
 		if (ghostID >= doubleGhosts.length) genGhosts(ghostID + 1);
@@ -716,7 +702,7 @@ class Character extends FlxSprite
 	// special thanks ne_eo for the references, you're the goat!!
 	@:allow(states.editors.CharacterEditorState)
 	public var isAnimateAtlas(default, null):Bool = false;
-	#if flxanimate
+	#if flixel_animate
 	public var atlas:FlxAnimate;
 	public override function draw()
 	{
@@ -772,8 +758,17 @@ class Character extends FlxSprite
 			atlas.cameras = cameras;
 			atlas.scrollFactor = scrollFactor;
 			atlas.scale = scale;
-			atlas.offset = offset;
-			atlas.origin = origin;
+			var boundsX:Float = 0;
+			var boundsY:Float = 0;
+			if (atlas.timeline != null && atlas.timeline._bounds != null) {
+				boundsX = atlas.timeline._bounds.x;
+				boundsY = atlas.timeline._bounds.y;
+			} if (boundsX != 0 || boundsY != 0) {
+				atlas.offset.set(offset.x - boundsX * scale.x, offset.y - boundsY * scale.y);
+			} else {
+				atlas.offset.set(offset.x, offset.y);
+			}
+			atlas.origin.set(origin);
 			atlas.x = x;
 			atlas.y = y;
 			atlas.angle = angle;
@@ -791,7 +786,7 @@ class Character extends FlxSprite
 
 	public override function destroy()
 	{
-		#if flxanimate
+		#if flixel_animate
 		atlas = FlxDestroyUtil.destroy(atlas);
 		#end
 		missingText = FlxDestroyUtil.destroy(missingText);

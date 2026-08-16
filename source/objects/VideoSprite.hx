@@ -22,7 +22,11 @@ class VideoSprite extends FlxSpriteGroup {
 
 	public var waiting:Bool = false;
 
-	public function new(videoName:String, isWaiting:Bool, canSkip:Bool = false, shouldLoop:Dynamic = false) {
+	public var precached:Bool = false;
+
+	public var muted:Bool = false;
+
+	public function new(videoName:String, isWaiting:Bool, canSkip:Bool = false, shouldLoop:Dynamic = false, precacheOnly:Bool = false) {
 		super();
 
 		this.videoName = videoName;
@@ -64,7 +68,16 @@ class VideoSprite extends FlxSpriteGroup {
 		});
 
 		// start video and adjust resolution to screen size
-		videoSprite.load(videoName, shouldLoop ? ['input-repeat=65545'] : null);
+		final options:Array<String> = shouldLoop ? ['input-repeat=65545'] : null;
+		if (precacheOnly) {
+			precached = true;
+			#if (hxvlc >= "2.3.0")
+			videoSprite.precache(videoName, options);
+			#else
+			videoSprite.load(videoName, options);
+			#end
+		} else
+			videoSprite.load(videoName, options);
 	}
 
 	var alreadyDestroyed:Bool = false;

@@ -290,7 +290,6 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 					if(animateGhost == null) //If I created the animateGhost on create() and you didn't load an atlas, it would crash the game on destroy, so we create it here
 					{
 						animateGhost = new FlxAnimate(ghost.x, ghost.y);
-						animateGhost.showPivot = false;
 						insert(members.indexOf(ghost), animateGhost);
 						animateGhost.active = false;
 					}
@@ -824,7 +823,6 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		if(Paths.fileExists('images/' + character.imageFile + '/Animation.json', TEXT))
 		{
 			character.atlas = new FlxAnimate();
-			character.atlas.showPivot = false;
 			try
 			{
 				Paths.loadAnimateAtlas(character.atlas, character.imageFile);

@@ -1,6 +1,9 @@
 package objects;
 
+import openfl.display.BitmapData;
 import flixel.math.FlxRect;
+import flixel.util.FlxGradient;
+import flixel.graphics.FlxGraphic;
 
 class Bar extends FlxSpriteGroup
 {
@@ -73,6 +76,70 @@ class Bar extends FlxSpriteGroup
 			leftBar.color = left;
 		if (right != null)
 			rightBar.color = right;
+	}
+
+	public function createGradientBar(
+		empty:Array<FlxColor>, 
+		fill:Array<FlxColor>, 
+		chunkSize:Int = 1, 
+		rotation:Int = 180, 
+		showBorder:Bool = false, 
+		border:FlxColor = FlxColor.WHITE, 
+		borderSize:Int = 1
+	):Bar
+	{
+		var emptyBmp:BitmapData;
+		if (showBorder)
+		{
+			emptyBmp = new BitmapData(barWidth, barHeight, true, border);
+			FlxGradient.overlayGradientOnBitmapData(
+				emptyBmp, 
+				barWidth - borderSize * 2, 
+				barHeight - borderSize * 2, 
+				empty, 
+				borderSize, 
+				borderSize, 
+				chunkSize, 
+				rotation
+			);
+		}
+		else
+		{
+			emptyBmp = FlxGradient.createGradientBitmapData(
+				barWidth, barHeight, empty, chunkSize, rotation
+			);
+		}
+		rightBar.loadGraphic(FlxGraphic.fromBitmapData(emptyBmp));
+	
+		var fillBmp:BitmapData;
+		if (showBorder)
+		{
+			fillBmp = new BitmapData(barWidth, barHeight, true, border);
+			FlxGradient.overlayGradientOnBitmapData(
+				fillBmp, 
+				barWidth - borderSize * 2, 
+				barHeight - borderSize * 2, 
+				fill, 
+				borderSize, 
+				borderSize, 
+				chunkSize, 
+				rotation
+			);
+		}
+		else
+		{
+			fillBmp = FlxGradient.createGradientBitmapData(
+				barWidth, barHeight, fill, chunkSize, rotation
+			);
+		}
+		leftBar.loadGraphic(FlxGraphic.fromBitmapData(fillBmp));
+	
+		leftBar.antialiasing = ClientPrefs.data.antialiasing;
+		rightBar.antialiasing = ClientPrefs.data.antialiasing;
+	
+		regenerateClips();
+	
+		return this;
 	}
 
 	public function updateBar()

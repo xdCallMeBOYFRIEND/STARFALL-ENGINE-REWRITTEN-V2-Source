@@ -1873,10 +1873,10 @@ class PlayState extends MusicBeatState
 				timeTxt.text = SONG.song;
 
 			if(ClientPrefs.data.timeBarType == 'Song Name + Time'){
-				timeTxt.text = SONG.song + "(" + FlxStringUtil.formatTime(secondsTotal, false) + ")";
+				timeTxt.text = SONG.song + "(" + CoolUtil.formatTime(secondsTotal, false) + ")";
 			}
 			if(ClientPrefs.data.timeBarType != 'Song Name' && ClientPrefs.data.timeBarType != 'Song Name + Time'){
-				timeTxt.text = FlxStringUtil.formatTime(secondsTotal, false);
+				timeTxt.text = CoolUtil.formatTime(secondsTotal, false);
 			}
 			if(ClientPrefs.data.timeBarType == 'Forever Mark') timeTxt.text = "- " + SONG.song + " ["+= storyDifficultyText.toUpperCase() + "] -";
 		}
@@ -3557,6 +3557,16 @@ class PlayState extends MusicBeatState
 		if(lastBeatHit >= curBeat) {
 			//trace('BEAT HIT: ' + curBeat + ', LAST HIT: ' + lastBeatHit);
 			return;
+		}
+
+		if (startOnTime <= 0 && !skipCountdown && beat >= 4 && beat <= 0) {
+			countdownTick(switch(beat) {
+				default: START;
+				case -4: THREE;
+				case -3: TWO;
+				case -2: ONE;
+				case -1: GO;
+			});
 		}
 
 		if (camZooming && FlxG.camera.zoom < 1.35 && ClientPrefs.data.camZooms && (curBeat % camZoomingFrequency) == 0)
