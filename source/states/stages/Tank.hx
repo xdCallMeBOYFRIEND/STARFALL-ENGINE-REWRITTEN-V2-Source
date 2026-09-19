@@ -82,8 +82,8 @@ class Tank extends BaseStage
 					setStartCallback(ughIntro);
 				case 'guns':
 					setStartCallback(gunsIntro);
-				case 'stress':
-					setStartCallback(stressIntro);
+				//case 'stress':
+					//setStartCallback(stressIntro);
 			}
 		}
 	}
@@ -144,9 +144,8 @@ class Tank extends BaseStage
 		camHUD.visible = false;
 		//inCutscene = true; //this would stop the camera movement, oops
 
-		tankman = new FlxAnimate(dad.x + 419, dad.y + 225);
-		tankman.showPivot = false;
-		Paths.loadAnimateAtlas(tankman, 'cutscenes/tankman');
+		tankman = new FlxAnimate(dad.x - 30, dad.y - 20);
+		tankman.frames = FlxAnimateFrames.fromAnimate(Paths.getFolderPath('images/cutscenes/tankman', 'week7'));
 		tankman.antialiasing = ClientPrefs.data.antialiasing;
 		addBehindDad(tankman);
 		cutsceneHandler.push(tankman);
@@ -293,20 +292,20 @@ class Tank extends BaseStage
 		Paths.sound('stressCutscene');
 
 		pico = new FlxAnimate(gf.x + 150, gf.y + 450);
-		pico.showPivot = false;
-		Paths.loadAnimateAtlas(pico, 'cutscenes/picoAppears');
-		pico.antialiasing = ClientPrefs.data.antialiasing;
+		pico.frames = FlxAnimateFrames.fromAnimate(Paths.getFolderPath('images/cutscenes/picoAppears', 'week7'));
 		pico.anim.addBySymbol('dance', 'GF Dancing at Gunpoint', 24, true);
 		pico.anim.addBySymbol('dieBitch', 'GF Time to Die sequence', 24, false);
 		pico.anim.addBySymbol('picoAppears', 'Pico Saves them sequence', 24, false);
 		pico.anim.addBySymbol('picoEnd', 'Pico Dual Wield on Speaker idle', 24, false);
 		pico.anim.play('dance', true);
+		pico.antialiasing = ClientPrefs.data.antialiasing;
 		addBehindGF(pico);
 		cutsceneHandler.push(pico);
 
 		// prepare pico animation cycle
+		/*
 		function picoStressCycle() {
-			switch (pico.anim.curInstance.symbol.name) {
+			switch (pico.curInstance.symbol.name) {
 				case "dieBitch", "GF Time to Die sequence":
 					pico.anim.play('picoAppears', true);
 					boyfriendGroup.alpha = 1;
@@ -330,9 +329,8 @@ class Tank extends BaseStage
 			}
 		}
 		pico.anim.onComplete.add(picoStressCycle);
-
+		*/
 		boyfriendCutscene = new FlxSprite(boyfriend.x + 5, boyfriend.y + 20);
-		boyfriendCutscene.antialiasing = ClientPrefs.data.antialiasing;
 		boyfriendCutscene.frames = Paths.getSparrowAtlas('characters/BOYFRIEND');
 		boyfriendCutscene.animation.addByPrefix('idle', 'BF idle dance', 24, false);
 		boyfriendCutscene.animation.play('idle', true);

@@ -2,7 +2,6 @@ package states.editors;
 
 import flixel.graphics.FlxGraphic;
 
-import flixel.system.debug.interaction.tools.Pointer.GraphicCursorCross;
 import flixel.util.FlxDestroyUtil;
 
 import openfl.net.FileReference;
@@ -16,13 +15,19 @@ import objects.Bar;
 
 import states.editors.content.Prompt;
 import states.editors.content.PsychJsonPrinter;
-
+import animate.FlxAnimate;
+import animate.FlxAnimateFrames;
+// flixel 5.7.0+ fix
+#if ( flixel < version("5.7.0"))
+typedef PointerGraphic = flixel.system.debug.interaction.tools.Pointer.GraphicCursorCross;
+#else
+@:bitmap("assets/images/debugger/cursorCross.png")
+class PointerGraphic extends openfl.display.BitmapData {}
+#end
 class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler.PsychUIEvent
 {
 	var character:Character;
-	var ghost:FlxSprite;
-	var animateGhost:FlxAnimate;
-	var animateGhostImage:String;
+	var ghost:FlxAnimate;
 	var cameraFollowPointer:FlxSprite;
 	var isAnimateSprite:Bool = false;
 
@@ -96,7 +101,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 
 		silhouettes.alpha = 0.25;
 
-		ghost = new FlxSprite();
+		ghost = new FlxAnimate();
 		ghost.visible = false;
 		ghost.alpha = ghostAlpha;
 		add(ghost);
@@ -109,9 +114,10 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 
 		addCharacter();
 
-		cameraFollowPointer = new FlxSprite().loadGraphic(FlxGraphic.fromClass(GraphicCursorCross));
+		cameraFollowPointer = new FlxSprite(FlxGraphic.fromClass(PointerGraphic));
 		cameraFollowPointer.setGraphicSize(40, 40);
 		cameraFollowPointer.updateHitbox();
+		cameraFollowPointer.antialiasing = false;
 
 		healthBar = new Bar(30, FlxG.height - 75);
 		healthBar.scrollFactor.set();
@@ -226,7 +232,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 			remove(character);
 			character.destroy();
 		}
-
+		ghost.visible = false;
 		var isPlayer = (reload ? character.isPlayer : !predictCharacterIsNotPlayer(_char));
 		character = new Character(0, 0, _char, isPlayer);
 		if(!reload && character.editorIsPlayer != null && isPlayer != character.editorIsPlayer)
@@ -277,57 +283,41 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 			if(!character.isAnimationNull())
 			{
 				var myAnim = anims[curAnim];
+
 				if(!character.isAnimateAtlas)
 				{
 					ghost.loadGraphic(character.graphic);
 					ghost.frames.frames = character.frames.frames;
-					ghost.animation.copyFrom(character.animation);
-					ghost.animation.play(character.animation.curAnim.name, true, false, character.animation.curAnim.curFrame);
-					ghost.animation.pause();
-				}
-				else if(myAnim != null) //This is VERY unoptimized and bad, I hope to find a better replacement that loads only a specific frame as bitmap in the future.
-				{
-					if(animateGhost == null) //If I created the animateGhost on create() and you didn't load an atlas, it would crash the game on destroy, so we create it here
-					{
-						animateGhost = new FlxAnimate(ghost.x, ghost.y);
-						insert(members.indexOf(ghost), animateGhost);
-						animateGhost.active = false;
-					}
 
-					if(animateGhost == null || animateGhostImage != character.imageFile)
-						Paths.loadAnimateAtlas(animateGhost, character.imageFile);
-					
+					ghost.anim.copyFrom(character.animation);
+					ghost.anim.play(character.animation.curAnim.name, true, false, character.animation.curAnim.curFrame);
+				}else{
+					ghost.frames = FlxAnimateFrames.fromAnimate(Paths.getPath('images/' + character.imageFile));
 					if(myAnim.indices != null && myAnim.indices.length > 0)
-						animateGhost.anim.addBySymbolIndices('anim', myAnim.name, myAnim.indices, 0, false);
+						ghost.anim.addBySymbolIndices('anim', myAnim.name, myAnim.indices, 0, false);
 					else
-						animateGhost.anim.addBySymbol('anim', myAnim.name, 0, false);
+						ghost.anim.addBySymbol('anim', myAnim.name, 0, false);
 
-					animateGhost.anim.play('anim', true, false, character.atlas.anim.curFrame);
-					animateGhost.anim.pause();
+					ghost.anim.play('anim', true, false);
 
-					animateGhostImage = character.imageFile;
 				}
-				
-				var spr:FlxSprite = !character.isAnimateAtlas ? ghost : animateGhost;
-				if(spr != null)
-				{
-					spr.setPosition(character.x, character.y);
-					spr.antialiasing = character.antialiasing;
-					spr.flipX = character.flipX;
-					spr.alpha = ghostAlpha;
+			
+				ghost.anim.pause();
+			
+				ghost.setPosition(character.x, character.y);
+				ghost.antialiasing = character.antialiasing;
+				ghost.flipX = character.flipX;
+				ghost.alpha = ghostAlpha;
 
-					spr.scale.set(character.scale.x, character.scale.y);
-					spr.updateHitbox();
+				ghost.scale.set(character.scale.x, character.scale.y);
+				ghost.updateHitbox();
 
-					spr.offset.set(character.offset.x, character.offset.y);
-					spr.visible = true;
-
-					var otherSpr:FlxSprite = (spr == animateGhost) ? ghost : animateGhost;
-					if(otherSpr != null) otherSpr.visible = false;
-				}
+				ghost.offset.set(character.offset.x, character.offset.y);
+				ghost.visible = true;
+				var otherSpr:FlxAnimate = ghost;
+				if(otherSpr != null) otherSpr.visible = true;
 				/*hideGhostButton.active = true;
 				hideGhostButton.alpha = 1;*/
-				trace('created ghost image');
 			}
 		});
 
@@ -346,19 +336,13 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 			ghost.colorTransform.redOffset = value;
 			ghost.colorTransform.greenOffset = value;
 			ghost.colorTransform.blueOffset = value;
-			if(animateGhost != null)
-			{
-				animateGhost.colorTransform.redOffset = value;
-				animateGhost.colorTransform.greenOffset = value;
-				animateGhost.colorTransform.blueOffset = value;
-			}
+
 		};
 
 		var ghostAlphaSlider:PsychUISlider = new PsychUISlider(15, makeGhostButton.y + 25, function(v:Float)
 		{
 			ghostAlpha = v;
 			ghost.alpha = ghostAlpha;
-			if(animateGhost != null) animateGhost.alpha = ghostAlpha;
 
 		}, ghostAlpha, 0, 1);
 		ghostAlphaSlider.label = 'Opacity:';
@@ -381,7 +365,6 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		{
 			character.isPlayer = !character.isPlayer;
 			character.flipX = !character.flipX;
-			reapplyCurrentOffset();
 			updateCharacterPositions();
 			updatePointerPos(false);
 		};
@@ -414,10 +397,9 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 				healthbar_colors: [161, 161, 161],
 				camera_position: [0, 0],
 				position: [0, 0],
+				vocals_file: null,
 				vSus: false,
-				freezeSus: false,
-				doubleGhosts: true,
-				vocals_file: null
+				freezeSus: false
 			};
 
 			character.loadCharacterFile(_template);
@@ -536,8 +518,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 					lastOffsets = anim.offsets;
 					if(character.hasAnimation(animationInputText.text))
 					{
-						if(!character.isAnimateAtlas) character.animation.remove(animationInputText.text);
-						else @:privateAccess character.atlas.anim.animsMap.remove(animationInputText.text);
+						character.anim.remove(animationInputText.text);
 					}
 					character.animationsArray.remove(anim);
 				}
@@ -564,8 +545,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 					if(anim.anim == character.getAnimationName()) resetAnim = true;
 					if(character.hasAnimation(anim.anim))
 					{
-						if(!character.isAnimateAtlas) character.animation.remove(anim.anim);
-						else @:privateAccess character.atlas.anim.animsMap.remove(anim.anim);
+						character.anim.remove(anim.anim);
 						character.animOffsets.remove(anim.anim);
 						character.animationsArray.remove(anim);
 					}
@@ -655,7 +635,6 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		flipXCheckBox.onClick = function() {
 			character.originalFlipX = !character.originalFlipX;
 			character.flipX = (character.originalFlipX != character.isPlayer);
-			reapplyCurrentOffset();
 		};
 
 		noAntialiasingCheckBox = new PsychUICheckBox(flipXCheckBox.x, flipXCheckBox.y + 40, "No Antialiasing", 80);
@@ -719,8 +698,6 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		tab_group.add(healthColorStepperG);
 		tab_group.add(healthColorStepperB);
 		tab_group.add(saveCharacterButton);
-		tab_group.add(vSliceSusCheckBox);
-		tab_group.add(freezedSusCheckBox);
 	}
 
 	public function UIEvent(id:String, sender:Dynamic) {
@@ -756,7 +733,6 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 				character.jsonScale = sender.value;
 				character.scale.set(character.jsonScale, character.jsonScale);
 				character.updateHitbox();
-				reapplyCurrentOffset();
 				updatePointerPos(false);
 				unsavedProgress = true;
 			}
@@ -815,17 +791,16 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		var lastAnim:String = character.getAnimationName();
 		var anims:Array<AnimArray> = character.animationsArray.copy();
 
-		character.atlas = FlxDestroyUtil.destroy(character.atlas);
 		character.isAnimateAtlas = false;
 		character.color = FlxColor.WHITE;
 		character.alpha = 1;
 
 		if(Paths.fileExists('images/' + character.imageFile + '/Animation.json', TEXT))
 		{
-			character.atlas = new FlxAnimate();
 			try
 			{
-				Paths.loadAnimateAtlas(character.atlas, character.imageFile);
+				character.frames = FlxAnimateFrames.fromAnimate(Paths.getPath('images/' +  character.imageFile));
+
 			}
 			catch(e:Dynamic)
 			{
@@ -1023,15 +998,10 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 
 			var frames:Int = -1;
 			var length:Int = -1;
-			if(!character.isAnimateAtlas && character.animation.curAnim != null)
+			if(character.anim.curAnim != null)
 			{
-				frames = character.animation.curAnim.curFrame;
-				length = character.animation.curAnim.numFrames;
-			}
-			else if(character.isAnimateAtlas && character.atlas.anim != null)
-			{
-				frames = character.atlas.anim.curFrame;
-				length = character.atlas.anim.length;
+				frames = character.anim.curAnim.curFrame;
+				length = character.anim.curAnim.numFrames;
 			}
 
 			if(length >= 0)
@@ -1045,8 +1015,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 					if(holdingFrameTime <= 0.5 || holdingFrameElapsed > 0.1)
 					{
 						frames = FlxMath.wrap(frames + Std.int(isLeft ? -shiftMult : shiftMult), 0, length-1);
-						if(!character.isAnimateAtlas) character.animation.curAnim.curFrame = frames;
-						else character.atlas.anim.curFrame = frames;
+						character.anim.curAnim.curFrame = frames;
 						holdingFrameElapsed -= 0.1;
 					}
 				}
@@ -1074,7 +1043,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 			{
 				if(!unsavedProgress)
 				{
-					MusicBeatState.switchState(new states.editors.MasterEditorMenu());
+					FlxG.switchState(() -> new states.editors.MasterEditorMenu());
 					FlxG.sound.playMusic(Paths.music('freakyMenu'));
 				}
 				else openSubState(new ExitConfirmationPrompt());
@@ -1082,13 +1051,13 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 			else
 			{
 				FlxG.mouse.visible = false;
-				MusicBeatState.switchState(new PlayState());
+				FlxG.switchState(() -> new PlayState());
 			}
 			return;
 		}
 	}
 
-	final assetFolder = 'week1';  //load from assets/week1/
+		final assetFolder = 'week1';  //load from assets/week1/
 	inline function loadBG()
 	{
 		var lastLoaded = Paths.currentLevel;
@@ -1115,6 +1084,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 
 		Paths.currentLevel = lastLoaded;
 	}
+
 
 	inline function updatePointerPos(?snap:Bool = true)
 	{
@@ -1188,16 +1158,6 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		animsTxt.text = intendText;
 	}
 
-	function reapplyCurrentOffset() {
-		if (character == null)
-			return;
-		var name = character.getAnimationName();
-		if (name != null && name.length > 0 && character.animOffsets.exists(name)) {
-			var raw = character.animOffsets.get(name);
-			character.applyAnimOffsets(raw[0], raw[1]);
-		}
-	}
-
 	inline function updateCharacterPositions()
 	{
 		if((character != null && !character.isPlayer) || (character == null && predictCharacterIsNotPlayer(_char))) character.setPosition(dadPosition.x, dadPosition.y);
@@ -1219,17 +1179,20 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		if(!character.isAnimateAtlas)
 		{
 			if(indices != null && indices.length > 0)
-				character.animation.addByIndices(anim, name, indices, "", fps, loop);
+				character.anim.addByIndices(anim, name, indices, "", fps, loop);
 			else
-				character.animation.addByPrefix(anim, name, fps, loop);
+				character.anim.addByPrefix(anim, name, fps, loop);
 		}
 		else
 		{
+
 			if(indices != null && indices.length > 0)
-				character.atlas.anim.addBySymbolIndices(anim, name, indices, fps, loop);
-			else
-				character.atlas.anim.addBySymbol(anim, name, fps, loop);
+						character.anim.addBySymbolIndices(anim, name, indices, fps, loop);
+					else
+						character.anim.addBySymbol(anim, name, fps, loop);
+
 		}
+	
 
 		if(!character.hasAnimation(anim))
 			character.addOffset(anim, 0, 0);
@@ -1251,6 +1214,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 	function reloadCharacterDropDown() {
 		characterList = Mods.mergeAllTextsNamed('data/characterList.txt');
 		var foldersToCheck:Array<String> = Mods.directoriesWithFile(Paths.getSharedPath(), 'characters/');
+		#if sys
 		for (folder in foldersToCheck)
 			for (file in FileSystem.readDirectory(folder))
 				if(file.toLowerCase().endsWith('.json'))
@@ -1259,7 +1223,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 					if(!characterList.contains(charToCheck))
 						characterList.push(charToCheck);
 				}
-
+		#end
 		if(characterList.length < 1) characterList.push('');
 		charDropDown.list = characterList;
 		charDropDown.selectedLabel = _char;
@@ -1327,10 +1291,9 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 			"no_antialiasing": character.noAntialiasing,
 			"healthbar_colors": character.healthColorArray,
 			"vocals_file": character.vocalsFile,
+			"_editor_isPlayer": character.isPlayer,
 			"vSus": character.vSliceSustains,
-			"freezeSus": character.frozenSustains,
-			"doubleGhosts": character.ghostsEnabled,
-			"_editor_isPlayer": character.isPlayer
+			"freezeSus": character.frozenSustains
 		};
 
 		var data:String = PsychJsonPrinter.print(json, ['offsets', 'position', 'healthbar_colors', 'camera_position', 'indices']);

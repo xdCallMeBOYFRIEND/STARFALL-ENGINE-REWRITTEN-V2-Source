@@ -6,6 +6,7 @@ class SustainSplash extends FlxSprite
 	public static var frameRate:Int;
 
 	public var strumNote:StrumNote;
+	public var skin:String = 'holdSplash-Vanilla';
 
 	var timer:FlxTimer;
 
@@ -15,8 +16,14 @@ class SustainSplash extends FlxSprite
 
 		x = -50000;
 
-		frames = Paths.getSparrowAtlas('holdSplashes/holdSplash-' + ClientPrefs.data.holdSplashSkin);
+		if (PlayState.SONG != null
+			&& PlayState.SONG.holdSplashSkin != null
+			&& PlayState.SONG.holdSplashSkin.length > 0
+			&& Paths.getSparrowAtlas('holdSplashes/' + PlayState.SONG.holdSplashSkin) != null)
+			skin = PlayState.SONG.holdSplashSkin;
+		frames = Paths.getSparrowAtlas('holdSplashes/$skin');
 
+		animation.addByPrefix('start', 'start', 24, true);
 		animation.addByPrefix('hold', 'hold', 24, true);
 		animation.addByPrefix('end', 'end', 24, false);
 	}
@@ -27,7 +34,7 @@ class SustainSplash extends FlxSprite
 
 		if (strumNote != null)
 		{
-			setPosition(strumNote.x, strumNote.y);
+			repositionSplash();
 			visible = strumNote.visible;
 			alpha = ClientPrefs.data.holdSplashAlpha - (1 - strumNote.alpha);
 
@@ -39,6 +46,12 @@ class SustainSplash extends FlxSprite
 		}
 	}
 
+	function repositionSplash()
+	{
+		setPosition(strumNote.x, strumNote.y);
+		offset.set(PlayState.isPixelStage ? 112.5 : 106.25, 100);
+	}
+
 	public function setupSusSplash(strum:StrumNote, daNote:Note, ?playbackRate:Float = 1):Void
 	{
 		final lengthToGet:Int = !daNote.isSustainNote ? daNote.tail.length : daNote.parent.tail.length;
@@ -47,9 +60,17 @@ class SustainSplash extends FlxSprite
 
 		var tailEnd:Note = !daNote.isSustainNote ? daNote.tail[daNote.tail.length - 1] : daNote.parent.tail[daNote.parent.tail.length - 1];
 
-		animation.play('hold', true, false, 0);
-		animation.curAnim.frameRate = frameRate;
-		animation.curAnim.looped = true;
+		animation.play('start');
+		animation.curAnim.looped = false;
+
+		animation.finishCallback = (animationName:String) ->
+		{
+			if (animationName == "start")
+			{
+				animation.play('hold', true, false, 0);
+				animation.curAnim.looped = true;
+			}
+		}
 
 		clipRect = new flixel.math.FlxRect(0, !PlayState.isPixelStage ? 0 : -210, frameWidth, frameHeight);
 
@@ -64,7 +85,7 @@ class SustainSplash extends FlxSprite
 
 		strumNote = strum;
 		alpha = ClientPrefs.data.holdSplashAlpha - (1 - strumNote.alpha);
-		offset.set(PlayState.isPixelStage ? 112.5 : 106.25, 100);
+		repositionSplash();
 
 		if (timer != null)
 			timer.cancel();
